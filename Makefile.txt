@@ -1,0 +1,22 @@
+PYTHON=python
+
+load:
+	$(PYTHON) src/etl/loader.py
+
+ratios:
+	$(PYTHON) src/analytics/ratio_engine.py
+
+test:
+	pytest -v
+
+report:
+	$(PYTHON) src/reporting/report_generator.py
+
+dashboard:
+	streamlit run dashboard/app.py
+
+api:
+	uvicorn src.api.main:app --reload
+
+clean:
+	python -c "import os, shutil; [shutil.rmtree(p, ignore_errors=True) for p in ['.pytest_cache','htmlcov','__pycache__'] if os.path.exists(p)]"
