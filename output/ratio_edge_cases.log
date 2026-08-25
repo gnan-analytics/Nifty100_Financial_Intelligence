@@ -1,0 +1,175 @@
+================================================================================
+NIFTY 100 FINANCIAL INTELLIGENCE PLATFORM
+SPRINT 2 — RATIO EDGE CASE LOG
+================================================================================
+
+[FINANCIALS CARVE-OUT] AXISBANK | Axis Bank Ltd | 2024-03
+  Broad Sector: Financials
+  Debt-to-Equity: 8.249122739980766
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] BAJAJFINSV | Bajaj Finserv Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 4.66410537870472
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] BAJAJHLDNG | Bajaj Holdings & Investment Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 0.0007856510037945271
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] BAJFINANCE | Bajaj Finance Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 3.7351013213829014
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] BANKBARODA | Bank of Baroda | 2024-03
+  Broad Sector: Financials
+  Debt-to-Equity: 12.143718727289434
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] CANBK | Canara Bank | 2024-03
+  Broad Sector: Financials
+  Debt-to-Equity: 14.867419925542423
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] CHOLAFIN | Cholamandalam Investment & Finance Company Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 7.376722245574705
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] HDFCBANK | HDFC Bank Ltd | 2024-03
+  Broad Sector: Financials
+  Debt-to-Equity: 6.808786667718385
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] HDFCLIFE | HDFC Life Insurance Company Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 0.060881825173032554
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] ICICIBANK | ICICI Bank Ltd | 2024-03
+  Broad Sector: Financials
+  Debt-to-Equity: 6.445624336310825
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] ICICIGI | ICICI Lombard General Insurance Company Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 0.0
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] ICICIPRULI | ICICI Prudential Life Insurance Company Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 0.0
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] INDUSINDBK | IndusInd Bank Ltd | 2024-03
+  Broad Sector: Financials
+  Debt-to-Equity: 6.885742949503957
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] IRFC | Indian Railway Finance Corporation Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 7.832721266880404
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] JIOFIN | Jio Financial Services Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 0.0
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] KOTAKBANK | Kotak Mahindra Bank Ltd
+ | 2024-03
+  Broad Sector: Financials
+  Debt-to-Equity: 4.003739266919029
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] LICI | Life Insurance Corporation of India | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 0.00010242018906766902
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] PFC | Power Finance Corporation Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 8.273331152427167
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] PNB | Punjab National Bank | 2024-03
+  Broad Sector: Financials
+  Debt-to-Equity: 3.684256345007701
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[ROE ANOMALY] PNB | Punjab National Bank | 2024-03
+  Source ROE: 8.70%
+  Computed ROE: 61.32%
+  Difference: 52.62 pp
+  Category: data source issue
+  Decision: Ratio-engine ROE used for analytics; source retained for display.
+
+[FINANCIALS CARVE-OUT] RECLTD | REC Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 6.578928037001768
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] SBILIFE | SBI Life Insurance Company Ltd | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 0.0
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] SBIN | State Bank of India | 2024-03
+  Broad Sector: Financials
+  Debt-to-Equity: nan
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[FINANCIALS CARVE-OUT] SHRIRAMFIN | Shriram Finance Ltd
+ | 2024-09
+  Broad Sector: Financials
+  Debt-to-Equity: 3.966636127653077
+  Decision: Standard high D/E warning suppressed.
+  ROCE benchmark: sector-relative.
+
+[ROCE ANOMALY] SIEMENS | Siemens Ltd | 2024-09
+  Source ROCE: 25.60%
+  Computed ROCE: 19.85%
+  Difference: 5.75 pp
+  Category: version difference
+  Decision: Review source version and formula inputs.
+
+================================================================================
+SUMMARY
+================================================================================
+Companies reviewed: 92
+Financials carve-out rows: 23
+ROE anomalies > 5pp: 1
+ROCE anomalies > 5pp: 1
+
+Allowed anomaly categories:
+- data source issue
+- version difference
+- formula discrepancy
+
+Analytics policy:
+Computed Ratio Engine values are used for analytics.
+Source company-level ROE/ROCE values are retained for display and cross-check only.
