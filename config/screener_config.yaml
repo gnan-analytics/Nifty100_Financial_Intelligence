@@ -1,0 +1,168 @@
+# ============================================================
+# Nifty 100 Financial Intelligence Platform
+# Sprint 3 - Screener Configuration
+# ============================================================
+
+metrics:
+
+  roe:
+    column: return_on_equity_pct
+    operator: min
+    label: ROE (%)
+
+  debt_to_equity:
+    column: debt_to_equity
+    operator: max
+    label: Debt to Equity
+    skip_financials: true
+
+  free_cash_flow:
+    column: free_cash_flow_cr
+    operator: min
+    label: Free Cash Flow (Cr)
+
+  revenue_cagr_5yr:
+    column: revenue_cagr_5yr
+    operator: min
+    label: Revenue CAGR 5Y (%)
+
+  pat_cagr_5yr:
+    column: pat_cagr_5yr
+    operator: min
+    label: PAT CAGR 5Y (%)
+
+  operating_profit_margin:
+    column: operating_profit_margin_pct
+    operator: min
+    label: Operating Profit Margin (%)
+
+  pe_ratio:
+    column: pe_ratio
+    operator: max
+    label: P/E Ratio
+
+  pb_ratio:
+    column: pb_ratio
+    operator: max
+    label: P/B Ratio
+
+  dividend_yield:
+    column: dividend_yield_pct
+    operator: min
+    label: Dividend Yield (%)
+
+  interest_coverage:
+    column: interest_coverage
+    operator: min
+    label: Interest Coverage Ratio
+    debt_free_as_infinity: true
+
+  market_cap:
+    column: market_cap_crore
+    operator: min
+    label: Market Cap (Cr)
+
+  net_profit:
+    column: net_profit
+    operator: min
+    label: Net Profit (Cr)
+
+  eps_cagr:
+    column: eps_cagr_5yr
+    operator: min
+    label: EPS CAGR 5Y (%)
+
+  asset_turnover:
+    column: asset_turnover
+    operator: min
+    label: Asset Turnover
+
+  sales:
+    column: sales
+    operator: min
+    label: Sales (Cr)
+
+presets:
+
+  quality_compounder:
+    label: Quality Compounder
+    filters:
+      roe:
+        value: 15
+        comparison: gt
+      debt_to_equity:
+        value: 1.0
+        comparison: lt
+      free_cash_flow:
+        value: 0
+        comparison: gt
+      revenue_cagr_5yr:
+        value: 10
+        comparison: gt
+
+  value_pick:
+    label: Value Pick
+    filters:
+      pe_ratio:
+        value: 20
+        comparison: lt
+      pb_ratio:
+        value: 3.0
+        comparison: lt
+      debt_to_equity:
+        value: 2.0
+        comparison: lt
+      dividend_yield:
+        value: 1
+        comparison: gt
+
+  growth_accelerator:
+    label: Growth Accelerator
+    filters:
+      pat_cagr_5yr:
+        value: 20
+        comparison: gt
+      revenue_cagr_5yr:
+        value: 15
+        comparison: gt
+      debt_to_equity:
+        value: 2.0
+        comparison: lt
+
+  dividend_champion:
+    label: Dividend Champion
+    filters:
+      dividend_yield:
+        value: 2
+        comparison: gt
+      dividend_payout:
+        value: 80
+        comparison: lt
+      free_cash_flow:
+        value: 0
+        comparison: gt
+
+  debt_free_blue_chip:
+    label: Debt-Free Blue Chip
+    filters:
+      debt_to_equity:
+        value: 0
+        comparison: eq
+      roe:
+        value: 12
+        comparison: gt
+      sales:
+        value: 5000
+        comparison: gt
+
+  turnaround_watch:
+    label: Turnaround Watch
+    filters:
+      revenue_cagr_3yr:
+        value: 10
+        comparison: gt
+      free_cash_flow:
+        value: 0
+        comparison: gt
+    special_rules:
+      debt_to_equity_declining_yoy: true
