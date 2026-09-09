@@ -556,7 +556,12 @@ def main():
 
     path = write_workbook()
 
-    wb = validate_workbook()
+    validate_workbook()
+
+    wb = load_workbook(
+        OUTPUT_PATH,
+        data_only=True,
+    )
 
     print()
     print(

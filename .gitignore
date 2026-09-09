@@ -32,3 +32,4 @@ reports/*.pdf
 
 # Database
 db/*.db
+!output/valuation_flags.csv
