@@ -1,51 +1,35 @@
-﻿from pathlib import Path
 import sqlite3
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from openpyxl import load_workbook
-from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
-
 
 # ============================================================
 # PATHS
 # ============================================================
 
-PROJECT_ROOT = Path(
-    __file__
-).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-DB_PATH = (
-    PROJECT_ROOT
-    / "db"
-    / "nifty100.db"
-)
+DB_PATH = PROJECT_ROOT / "db" / "nifty100.db"
 
-OUTPUT_DIR = (
-    PROJECT_ROOT
-    / "output"
-)
+OUTPUT_DIR = PROJECT_ROOT / "output"
 
-VALUATION_XLSX = (
-    OUTPUT_DIR
-    / "valuation_summary.xlsx"
-)
+VALUATION_XLSX = OUTPUT_DIR / "valuation_summary.xlsx"
 
-FLAGS_CSV = (
-    OUTPUT_DIR
-    / "valuation_flags.csv"
-)
+FLAGS_CSV = OUTPUT_DIR / "valuation_flags.csv"
 
 
 # ============================================================
 # LOAD SOURCE DATA
 # ============================================================
 
+
 def load_data():
-    with sqlite3.connect(
-        DB_PATH
-    ) as conn:
+    """Load data."""
+    with sqlite3.connect(DB_PATH) as conn:
 
         companies = pd.read_sql_query(
             """
@@ -113,20 +97,15 @@ def load_data():
 # LATEST MARKET YEAR
 # ============================================================
 
+
 def get_latest_market_year(
     market,
 ):
-    years = (
-        market["year"]
-        .dropna()
-        .astype(str)
-        .sort_values()
-    )
+    """Return latest market year."""
+    years = market["year"].dropna().astype(str).sort_values()
 
     if years.empty:
-        raise ValueError(
-            "No market-cap years found."
-        )
+        raise ValueError("No market-cap years found.")
 
     return years.iloc[-1]
 
@@ -135,15 +114,15 @@ def get_latest_market_year(
 # 5-YEAR MEDIAN P/E
 # ============================================================
 
+
 def calculate_5yr_median_pe(
     market,
     latest_year,
 ):
+    """Calculate 5yr median pe."""
     market = market.copy()
 
-    market[
-        "year_date"
-    ] = pd.to_datetime(
+    market["year_date"] = pd.to_datetime(
         market["year"],
         format="%Y-%m",
         errors="coerce",
@@ -154,37 +133,19 @@ def calculate_5yr_median_pe(
         format="%Y-%m",
     )
 
-    start_date = latest_date - pd.DateOffset(
-        years=4
-    )
+    start_date = latest_date - pd.DateOffset(years=4)
 
     five_year = market[
-        (
-            market["year_date"]
-            >= start_date
-        )
-        &
-        (
-            market["year_date"]
-            <= latest_date
-        )
+        (market["year_date"] >= start_date) & (market["year_date"] <= latest_date)
     ].copy()
 
     result = (
-        five_year
-        .groupby(
+        five_year.groupby(
             "company_id",
             as_index=False,
-        )[
-            "pe_ratio"
-        ]
+        )["pe_ratio"]
         .median()
-        .rename(
-            columns={
-                "pe_ratio":
-                    "5yr_median_PE"
-            }
-        )
+        .rename(columns={"pe_ratio": "5yr_median_PE"})
     )
 
     return result
@@ -195,29 +156,22 @@ def calculate_5yr_median_pe(
 # Same financial period as latest market-cap year
 # ============================================================
 
+
 def get_latest_fcf(
     ratios,
     latest_year,
 ):
-    latest = ratios[
-        ratios["year"]
-        == latest_year
-    ].copy()
+    """Return latest fcf."""
+    latest = ratios[ratios["year"] == latest_year].copy()
 
-    latest = (
-        latest
-        .sort_values(
-            [
-                "company_id",
-                "year",
-            ]
-        )
-        .drop_duplicates(
-            subset=[
-                "company_id"
-            ],
-            keep="last",
-        )
+    latest = latest.sort_values(
+        [
+            "company_id",
+            "year",
+        ]
+    ).drop_duplicates(
+        subset=["company_id"],
+        keep="last",
     )
 
     return latest[
@@ -232,10 +186,12 @@ def get_latest_fcf(
 # SECTOR MEDIAN P/E
 # ============================================================
 
+
 def calculate_sector_median_pe(
     latest_market,
     sectors,
 ):
+    """Calculate sector median pe."""
     data = latest_market.merge(
         sectors,
         on="company_id",
@@ -243,17 +199,12 @@ def calculate_sector_median_pe(
     )
 
     medians = (
-        data
-        .groupby(
+        data.groupby(
             "sector",
             dropna=False,
-        )[
-            "pe_ratio"
-        ]
+        )["pe_ratio"]
         .median()
-        .reset_index(
-            name="sector_median_PE"
-        )
+        .reset_index(name="sector_median_PE")
     )
 
     return medians
@@ -263,29 +214,19 @@ def calculate_sector_median_pe(
 # VALUATION FLAG
 # ============================================================
 
+
 def valuation_flag(
     pe,
     sector_median,
 ):
-    if (
-        pd.isna(pe)
-        or pd.isna(
-            sector_median
-        )
-        or sector_median <= 0
-    ):
+    """Handle valuation flag."""
+    if pd.isna(pe) or pd.isna(sector_median) or sector_median <= 0:
         return "N/A"
 
-    if pe > (
-        sector_median
-        * 1.5
-    ):
+    if pe > (sector_median * 1.5):
         return "Caution"
 
-    if pe < (
-        sector_median
-        * 0.7
-    ):
+    if pe < (sector_median * 0.7):
         return "Discount"
 
     return "Fair"
@@ -295,7 +236,9 @@ def valuation_flag(
 # BUILD VALUATION DATAFRAME
 # ============================================================
 
+
 def build_valuation():
+    """Build valuation."""
     (
         companies,
         sectors,
@@ -303,40 +246,23 @@ def build_valuation():
         ratios,
     ) = load_data()
 
-    latest_year = (
-        get_latest_market_year(
-            market
-        )
-    )
+    latest_year = get_latest_market_year(market)
 
     print(
         "Latest market year:",
         latest_year,
     )
 
-    latest_market = market[
-        market["year"]
-        == latest_year
-    ].copy()
+    latest_market = market[market["year"] == latest_year].copy()
 
-    latest_market = (
-        latest_market
-        .sort_values(
-            "company_id"
-        )
-        .drop_duplicates(
-            subset=[
-                "company_id"
-            ],
-            keep="last",
-        )
+    latest_market = latest_market.sort_values("company_id").drop_duplicates(
+        subset=["company_id"],
+        keep="last",
     )
 
-    five_year_pe = (
-        calculate_5yr_median_pe(
-            market,
-            latest_year,
-        )
+    five_year_pe = calculate_5yr_median_pe(
+        market,
+        latest_year,
     )
 
     latest_fcf = get_latest_fcf(
@@ -344,11 +270,9 @@ def build_valuation():
         latest_year,
     )
 
-    sector_medians = (
-        calculate_sector_median_pe(
-            latest_market,
-            sectors,
-        )
+    sector_medians = calculate_sector_median_pe(
+        latest_market,
+        sectors,
     )
 
     df = companies.merge(
@@ -385,36 +309,11 @@ def build_valuation():
     # FCF YIELD
     # --------------------------------------------------------
 
-    df[
-        "FCF_yield_pct"
-    ] = np.where(
-        (
-            df[
-                "market_cap_crore"
-            ].notna()
-        )
-        &
-        (
-            df[
-                "market_cap_crore"
-            ] > 0
-        )
-        &
-        (
-            df[
-                "free_cash_flow_cr"
-            ].notna()
-        ),
-        (
-            df[
-                "free_cash_flow_cr"
-            ]
-            /
-            df[
-                "market_cap_crore"
-            ]
-            * 100
-        ),
+    df["FCF_yield_pct"] = np.where(
+        (df["market_cap_crore"].notna())
+        & (df["market_cap_crore"] > 0)
+        & (df["free_cash_flow_cr"].notna()),
+        (df["free_cash_flow_cr"] / df["market_cap_crore"] * 100),
         np.nan,
     )
 
@@ -422,36 +321,9 @@ def build_valuation():
     # P/E VS SECTOR MEDIAN %
     # --------------------------------------------------------
 
-    df[
-        "PE_vs_sector_median_pct"
-    ] = np.where(
-        (
-            df[
-                "sector_median_PE"
-            ].notna()
-        )
-        &
-        (
-            df[
-                "sector_median_PE"
-            ] != 0
-        ),
-        (
-            (
-                df[
-                    "pe_ratio"
-                ]
-                -
-                df[
-                    "sector_median_PE"
-                ]
-            )
-            /
-            df[
-                "sector_median_PE"
-            ]
-            * 100
-        ),
+    df["PE_vs_sector_median_pct"] = np.where(
+        (df["sector_median_PE"].notna()) & (df["sector_median_PE"] != 0),
+        ((df["pe_ratio"] - df["sector_median_PE"]) / df["sector_median_PE"] * 100),
         np.nan,
     )
 
@@ -459,18 +331,11 @@ def build_valuation():
     # FLAGS
     # --------------------------------------------------------
 
-    df[
-        "flag"
-    ] = df.apply(
-        lambda row:
-            valuation_flag(
-                row[
-                    "pe_ratio"
-                ],
-                row[
-                    "sector_median_PE"
-                ],
-            ),
+    df["flag"] = df.apply(
+        lambda row: valuation_flag(
+            row["pe_ratio"],
+            row["sector_median_PE"],
+        ),
         axis=1,
     )
 
@@ -495,9 +360,7 @@ def build_valuation():
             df[column] = pd.to_numeric(
                 df[column],
                 errors="coerce",
-            ).round(
-                2
-            )
+            ).round(2)
 
     return (
         df,
@@ -509,9 +372,11 @@ def build_valuation():
 # EXPORT EXCEL
 # ============================================================
 
+
 def export_excel(
     df,
 ):
+    """Export excel."""
     OUTPUT_DIR.mkdir(
         parents=True,
         exist_ok=True,
@@ -546,9 +411,7 @@ def export_excel(
         sheet_name="Valuation Summary",
     )
 
-    style_excel(
-        VALUATION_XLSX
-    )
+    style_excel(VALUATION_XLSX)
 
     return export
 
@@ -557,10 +420,12 @@ def export_excel(
 # EXPORT FLAG CSV
 # ============================================================
 
+
 def export_flags(
     df,
     latest_year,
 ):
+    """Export flags."""
     flags = df[
         df["flag"].isin(
             [
@@ -570,9 +435,7 @@ def export_flags(
         )
     ].copy()
 
-    flags[
-        "latest_year"
-    ] = latest_year
+    flags["latest_year"] = latest_year
 
     flags = flags[
         [
@@ -613,16 +476,14 @@ def export_flags(
 # EXCEL FORMATTING
 # ============================================================
 
+
 def style_excel(
     path,
 ):
-    workbook = load_workbook(
-        path
-    )
+    """Style excel."""
+    workbook = load_workbook(path)
 
-    sheet = workbook[
-        "Valuation Summary"
-    ]
+    sheet = workbook["Valuation Summary"]
 
     header_fill = PatternFill(
         fill_type="solid",
@@ -686,29 +547,17 @@ def style_excel(
     for column_cells in sheet.columns:
         max_length = 0
 
-        column_letter = (
-            get_column_letter(
-                column_cells[0].column
-            )
-        )
+        column_letter = get_column_letter(column_cells[0].column)
 
         for cell in column_cells:
-            value = (
-                ""
-                if cell.value is None
-                else str(
-                    cell.value
-                )
-            )
+            value = "" if cell.value is None else str(cell.value)
 
             max_length = max(
                 max_length,
                 len(value),
             )
 
-        sheet.column_dimensions[
-            column_letter
-        ].width = min(
+        sheet.column_dimensions[column_letter].width = min(
             max(
                 max_length + 2,
                 12,
@@ -717,24 +566,22 @@ def style_excel(
         )
 
     sheet.freeze_panes = "A2"
-    sheet.auto_filter.ref = (
-        sheet.dimensions
-    )
+    sheet.auto_filter.ref = sheet.dimensions
 
-    workbook.save(
-        path
-    )
+    workbook.save(path)
 
 
 # ============================================================
 # VALIDATION
 # ============================================================
 
+
 def validate(
     full_df,
     summary,
     flags,
 ):
+    """Handle validate."""
     required_columns = [
         "company_id",
         "company_name",
@@ -748,104 +595,64 @@ def validate(
         "flag",
     ]
 
-    assert len(
-        summary
-    ) == 92, (
-        f"Expected 92 rows, "
-        f"found {len(summary)}"
+    assert len(summary) == 92, f"Expected 92 rows, " f"found {len(summary)}"
+
+    assert summary["company_id"].nunique() == 92
+
+    assert all(column in summary.columns for column in required_columns)
+
+    assert summary["P/E"].notna().sum() == 92
+
+    assert summary["5yr_median_PE"].notna().sum() == 92
+
+    assert (
+        summary["flag"]
+        .isin(
+            [
+                "Caution",
+                "Discount",
+                "Fair",
+                "N/A",
+            ]
+        )
+        .all()
     )
 
-    assert summary[
-        "company_id"
-    ].nunique() == 92
-
-    assert all(
-        column in summary.columns
-        for column in required_columns
+    assert (
+        flags["flag"]
+        .isin(
+            [
+                "Caution",
+                "Discount",
+            ]
+        )
+        .all()
     )
-
-    assert summary[
-        "P/E"
-    ].notna().sum() == 92
-
-    assert summary[
-        "5yr_median_PE"
-    ].notna().sum() == 92
-
-    assert summary[
-        "flag"
-    ].isin(
-        [
-            "Caution",
-            "Discount",
-            "Fair",
-            "N/A",
-        ]
-    ).all()
-
-    assert flags[
-        "flag"
-    ].isin(
-        [
-            "Caution",
-            "Discount",
-        ]
-    ).all()
 
     # Verify threshold logic
-    check = full_df[
-        full_df[
-            "sector_median_PE"
-        ].notna()
-    ].copy()
+    check = full_df[full_df["sector_median_PE"].notna()].copy()
 
-    caution = check[
-        check["flag"]
-        == "Caution"
-    ]
+    caution = check[check["flag"] == "Caution"]
 
     if not caution.empty:
-        assert (
-            caution[
-                "pe_ratio"
-            ]
-            >
-            caution[
-                "sector_median_PE"
-            ]
-            * 1.5
-        ).all()
+        assert (caution["pe_ratio"] > caution["sector_median_PE"] * 1.5).all()
 
-    discount = check[
-        check["flag"]
-        == "Discount"
-    ]
+    discount = check[check["flag"] == "Discount"]
 
     if not discount.empty:
-        assert (
-            discount[
-                "pe_ratio"
-            ]
-            <
-            discount[
-                "sector_median_PE"
-            ]
-            * 0.7
-        ).all()
+        assert (discount["pe_ratio"] < discount["sector_median_PE"] * 0.7).all()
 
 
 # ============================================================
 # MAIN
 # ============================================================
 
-def main():
-    full_df, latest_year = (
-        build_valuation()
-    )
 
-    summary = export_excel(
-        full_df
-    )
+def main():
+    """Run the module entry point."""
+    full_df, latest_year = build_valuation()
+
+    summary = export_excel(full_df)
 
     flags = export_flags(
         full_df,
@@ -859,15 +666,9 @@ def main():
     )
 
     print()
-    print(
-        "=" * 70
-    )
-    print(
-        "VALUATION MODULE COMPLETE"
-    )
-    print(
-        "=" * 70
-    )
+    print("=" * 70)
+    print("VALUATION MODULE COMPLETE")
+    print("=" * 70)
 
     print(
         "Latest valuation year:",
@@ -881,30 +682,18 @@ def main():
 
     print(
         "FCF yield available:",
-        summary[
-            "FCF_yield_pct"
-        ].notna().sum(),
+        summary["FCF_yield_pct"].notna().sum(),
     )
 
     print(
         "5Y median P/E available:",
-        summary[
-            "5yr_median_PE"
-        ].notna().sum(),
+        summary["5yr_median_PE"].notna().sum(),
     )
 
     print()
-    print(
-        "Valuation flags:"
-    )
+    print("Valuation flags:")
 
-    print(
-        summary[
-            "flag"
-        ]
-        .value_counts()
-        .to_string()
-    )
+    print(summary["flag"].value_counts().to_string())
 
     print()
     print(
@@ -924,9 +713,7 @@ def main():
     )
 
     print()
-    print(
-        "DAY 26 VALUATION: PASS"
-    )
+    print("DAY 26 VALUATION: PASS")
 
 
 if __name__ == "__main__":

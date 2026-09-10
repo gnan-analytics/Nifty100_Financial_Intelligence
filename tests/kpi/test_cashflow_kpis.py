@@ -1,11 +1,11 @@
 import pytest
 
 from src.analytics.cashflow_kpis import (
-    calculate_free_cash_flow,
+    calculate_capex_intensity,
     calculate_cfo_pat_ratio,
     calculate_cfo_quality_score,
-    calculate_capex_intensity,
     calculate_fcf_conversion,
+    calculate_free_cash_flow,
     classify_capital_allocation,
 )
 
@@ -16,9 +16,7 @@ def test_free_cash_flow():
         investing_activity=-400,
     )
 
-    assert result == pytest.approx(
-        600.0
-    )
+    assert result == pytest.approx(600.0)
 
 
 def test_negative_free_cash_flow_allowed():
@@ -27,9 +25,7 @@ def test_negative_free_cash_flow_allowed():
         investing_activity=-500,
     )
 
-    assert result == pytest.approx(
-        -200.0
-    )
+    assert result == pytest.approx(-200.0)
 
 
 def test_cfo_pat_ratio_zero_pat():
@@ -52,15 +48,9 @@ def test_cfo_quality_high():
         ]
     )
 
-    assert result[
-        "average_ratio"
-    ] == pytest.approx(
-        1.2
-    )
+    assert result["average_ratio"] == pytest.approx(1.2)
 
-    assert result[
-        "label"
-    ] == "High Quality"
+    assert result["label"] == "High Quality"
 
 
 def test_capex_intensity_asset_light():
@@ -69,15 +59,9 @@ def test_capex_intensity_asset_light():
         sales=1000,
     )
 
-    assert result[
-        "value"
-    ] == pytest.approx(
-        2.0
-    )
+    assert result["value"] == pytest.approx(2.0)
 
-    assert result[
-        "label"
-    ] == "Asset Light"
+    assert result["label"] == "Asset Light"
 
 
 def test_capex_intensity_capital_intensive():
@@ -86,15 +70,9 @@ def test_capex_intensity_capital_intensive():
         sales=1000,
     )
 
-    assert result[
-        "value"
-    ] == pytest.approx(
-        10.0
-    )
+    assert result["value"] == pytest.approx(10.0)
 
-    assert result[
-        "label"
-    ] == "Capital Intensive"
+    assert result["label"] == "Capital Intensive"
 
 
 def test_fcf_conversion_zero_operating_profit():
@@ -114,9 +92,7 @@ def test_reinvestor_pattern():
         cfo_pat_ratio=0.8,
     )
 
-    assert result[
-        "pattern_label"
-    ] == "Reinvestor"
+    assert result["pattern_label"] == "Reinvestor"
 
 
 def test_shareholder_returns_pattern():
@@ -127,9 +103,7 @@ def test_shareholder_returns_pattern():
         cfo_pat_ratio=1.2,
     )
 
-    assert result[
-        "pattern_label"
-    ] == "Shareholder Returns"
+    assert result["pattern_label"] == "Shareholder Returns"
 
 
 def test_growth_funded_by_debt_pattern():
@@ -139,6 +113,4 @@ def test_growth_funded_by_debt_pattern():
         cff=200,
     )
 
-    assert result[
-        "pattern_label"
-    ] == "Growth Funded by Debt"
+    assert result["pattern_label"] == "Growth Funded by Debt"

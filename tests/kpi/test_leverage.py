@@ -1,13 +1,13 @@
 import pytest
 
 from src.analytics.ratios import (
+    calculate_asset_turnover,
     calculate_debt_to_equity,
     calculate_high_leverage_flag,
-    calculate_interest_coverage,
-    get_icr_label,
     calculate_icr_warning_flag,
+    calculate_interest_coverage,
     calculate_net_debt,
-    calculate_asset_turnover,
+    get_icr_label,
 )
 
 

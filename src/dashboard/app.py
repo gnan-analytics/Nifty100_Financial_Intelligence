@@ -1,9 +1,8 @@
-﻿from pathlib import Path
 import runpy
 import sys
+from pathlib import Path
 
 import streamlit as st
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -34,13 +33,9 @@ PAGES = {
 }
 
 
-st.sidebar.title(
-    "Nifty 100 Analytics"
-)
+st.sidebar.title("Nifty 100 Analytics")
 
-st.sidebar.caption(
-    "Financial Intelligence Platform"
-)
+st.sidebar.caption("Financial Intelligence Platform")
 
 selected_page = st.sidebar.radio(
     "Navigation",
@@ -49,16 +44,10 @@ selected_page = st.sidebar.radio(
 
 st.sidebar.divider()
 
-st.sidebar.caption(
-    "Sprint 4 Dashboard"
-)
+st.sidebar.caption("Sprint 4 Dashboard")
 
 
-page_path = (
-    Path(__file__).parent
-    / "pages"
-    / PAGES[selected_page]
-)
+page_path = Path(__file__).parent / "pages" / PAGES[selected_page]
 
 runpy.run_path(
     str(page_path),

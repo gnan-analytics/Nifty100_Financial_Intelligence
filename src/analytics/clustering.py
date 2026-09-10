@@ -1,12 +1,11 @@
-﻿from pathlib import Path
 import sqlite3
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-
 
 DB_PATH = Path("db/nifty100.db")
 CASHFLOW_PATH = Path("output/cashflow_intelligence.xlsx")
@@ -58,49 +57,20 @@ def load_clustering_data() -> pd.DataFrame:
 
     cashflow = pd.read_excel(CASHFLOW_PATH)
 
-    companies["id"] = (
-        companies["id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
+    companies["id"] = companies["id"].astype(str).str.strip().str.upper()
 
-    sectors["company_id"] = (
-        sectors["company_id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
+    sectors["company_id"] = sectors["company_id"].astype(str).str.strip().str.upper()
 
-    ratios["company_id"] = (
-        ratios["company_id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
+    ratios["company_id"] = ratios["company_id"].astype(str).str.strip().str.upper()
 
-    cashflow["company_id"] = (
-        cashflow["company_id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
+    cashflow["company_id"] = cashflow["company_id"].astype(str).str.strip().str.upper()
 
-    ratios["year"] = (
-        ratios["year"]
-        .astype(str)
-        .str.strip()
-    )
+    ratios["year"] = ratios["year"].astype(str).str.strip()
 
-    annual = ratios[
-        ratios["year"].str.endswith("-03")
-    ].copy()
+    annual = ratios[ratios["year"].str.endswith("-03")].copy()
 
     annual = (
-        annual
-        .sort_values(
-            ["company_id", "year"]
-        )
+        annual.sort_values(["company_id", "year"])
         .groupby(
             "company_id",
             as_index=False,
@@ -108,27 +78,18 @@ def load_clustering_data() -> pd.DataFrame:
         .tail(1)
     )
 
-    missing_ids = (
-        set(companies["id"])
-        - set(annual["company_id"])
-    )
+    missing_ids = set(companies["id"]) - set(annual["company_id"])
 
     fallback_rows = []
 
     for ticker in sorted(missing_ids):
-        rows = ratios[
-            ratios["company_id"] == ticker
-        ].sort_values("year")
+        rows = ratios[ratios["company_id"] == ticker].sort_values("year")
 
         if not rows.empty:
-            fallback_rows.append(
-                rows.iloc[-1]
-            )
+            fallback_rows.append(rows.iloc[-1])
 
     if fallback_rows:
-        fallback_df = pd.DataFrame(
-            fallback_rows
-        )
+        fallback_df = pd.DataFrame(fallback_rows)
 
         annual = pd.concat(
             [
@@ -139,8 +100,7 @@ def load_clustering_data() -> pd.DataFrame:
         )
 
     frame = (
-        companies
-        .merge(
+        companies.merge(
             sectors,
             left_on="id",
             right_on="company_id",
@@ -150,9 +110,7 @@ def load_clustering_data() -> pd.DataFrame:
             columns=["company_id"],
             errors="ignore",
         )
-        .rename(
-            columns={"id": "company_id"}
-        )
+        .rename(columns={"id": "company_id"})
         .merge(
             annual,
             on="company_id",
@@ -183,32 +141,18 @@ def impute_features(
     audit_rows = []
 
     for feature in FEATURES:
-        sector_median = (
-            result
-            .groupby("broad_sector")[feature]
-            .transform("median")
-        )
+        sector_median = result.groupby("broad_sector")[feature].transform("median")
 
-        missing_before = (
-            result[feature]
-            .isna()
-        )
+        missing_before = result[feature].isna()
 
-        sector_fill_mask = (
-            missing_before
-            & sector_median.notna()
-        )
+        sector_fill_mask = missing_before & sector_median.notna()
 
         result.loc[
             sector_fill_mask,
             feature,
-        ] = sector_median[
-            sector_fill_mask
-        ]
+        ] = sector_median[sector_fill_mask]
 
-        for idx in result[
-            sector_fill_mask
-        ].index:
+        for idx in result[sector_fill_mask].index:
             audit_rows.append(
                 {
                     "company_id": result.loc[
@@ -224,31 +168,20 @@ def impute_features(
                 }
             )
 
-        remaining_mask = (
-            result[feature]
-            .isna()
-        )
+        remaining_mask = result[feature].isna()
 
         if remaining_mask.any():
-            global_median = (
-                frame[feature]
-                .median()
-            )
+            global_median = frame[feature].median()
 
             if pd.isna(global_median):
-                raise ValueError(
-                    f"No usable values exist for "
-                    f"{feature}"
-                )
+                raise ValueError(f"No usable values exist for " f"{feature}")
 
             result.loc[
                 remaining_mask,
                 feature,
             ] = global_median
 
-            for idx in result[
-                remaining_mask
-            ].index:
+            for idx in result[remaining_mask].index:
                 audit_rows.append(
                     {
                         "company_id": result.loc[
@@ -261,9 +194,7 @@ def impute_features(
                     }
                 )
 
-    audit = pd.DataFrame(
-        audit_rows
-    )
+    audit = pd.DataFrame(audit_rows)
 
     return result, audit
 
@@ -284,22 +215,16 @@ def generate_elbow_plot(
             n_init=10,
         )
 
-        model.fit(
-            scaled_features
-        )
+        model.fit(scaled_features)
 
-        inertias.append(
-            model.inertia_
-        )
+        inertias.append(model.inertia_)
 
     ELBOW_PATH.parent.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    plt.figure(
-        figsize=(8, 5)
-    )
+    plt.figure(figsize=(8, 5))
 
     plt.plot(
         list(ks),
@@ -307,21 +232,13 @@ def generate_elbow_plot(
         marker="o",
     )
 
-    plt.xlabel(
-        "Number of Clusters (k)"
-    )
+    plt.xlabel("Number of Clusters (k)")
 
-    plt.ylabel(
-        "Inertia"
-    )
+    plt.ylabel("Inertia")
 
-    plt.title(
-        "KMeans Elbow Plot"
-    )
+    plt.title("KMeans Elbow Plot")
 
-    plt.xticks(
-        list(ks)
-    )
+    plt.xticks(list(ks))
 
     plt.tight_layout()
 
@@ -339,39 +256,20 @@ def run_clustering() -> pd.DataFrame:
     frame = load_clustering_data()
 
     if len(frame) != 92:
-        raise ValueError(
-            f"Expected 92 companies, got "
-            f"{len(frame)}"
-        )
+        raise ValueError(f"Expected 92 companies, got " f"{len(frame)}")
 
-    prepared, audit = (
-        impute_features(
-            frame
-        )
-    )
+    prepared, audit = impute_features(frame)
 
-    remaining_missing = (
-        prepared[FEATURES]
-        .isna()
-        .sum()
-        .sum()
-    )
+    remaining_missing = prepared[FEATURES].isna().sum().sum()
 
     if remaining_missing != 0:
-        raise ValueError(
-            "Missing clustering features remain "
-            "after imputation."
-        )
+        raise ValueError("Missing clustering features remain " "after imputation.")
 
     scaler = StandardScaler()
 
-    scaled = scaler.fit_transform(
-        prepared[FEATURES]
-    )
+    scaled = scaler.fit_transform(prepared[FEATURES])
 
-    generate_elbow_plot(
-        scaled
-    )
+    generate_elbow_plot(scaled)
 
     model = KMeans(
         n_clusters=5,
@@ -379,38 +277,24 @@ def run_clustering() -> pd.DataFrame:
         n_init=10,
     )
 
-    cluster_ids = model.fit_predict(
-        scaled
-    )
+    cluster_ids = model.fit_predict(scaled)
 
-    distances = model.transform(
-        scaled
-    )
+    distances = model.transform(scaled)
 
-    prepared["cluster_id"] = (
-        cluster_ids
-    )
+    prepared["cluster_id"] = cluster_ids
 
-    prepared[
-        "distance_from_centroid"
-    ] = [
-        distances[i, cluster_ids[i]]
-        for i in range(
-            len(cluster_ids)
-        )
+    prepared["distance_from_centroid"] = [
+        distances[i, cluster_ids[i]] for i in range(len(cluster_ids))
     ]
 
-    prepared["cluster_name"] = (
-        prepared["cluster_id"]
-        .map(
-            {
-                0: "Cluster 0",
-                1: "Cluster 1",
-                2: "Cluster 2",
-                3: "Cluster 3",
-                4: "Cluster 4",
-            }
-        )
+    prepared["cluster_name"] = prepared["cluster_id"].map(
+        {
+            0: "Core Balanced Companies",
+            1: "High Margin / Mixed Quality",
+            2: "ROE Outliers",
+            3: "FCF Growth Outliers",
+            4: "Leveraged Financial Growth",
+        }
     )
 
     output = prepared[
@@ -439,9 +323,7 @@ def run_clustering() -> pd.DataFrame:
         index=False,
     )
 
-    audit_path = Path(
-        "output/cluster_imputation_audit.csv"
-    )
+    audit_path = Path("output/cluster_imputation_audit.csv")
 
     audit.to_csv(
         audit_path,
@@ -449,59 +331,27 @@ def run_clustering() -> pd.DataFrame:
     )
 
     print("=" * 90)
-    print(
-        "SPRINT 6 - DAY 36 KMEANS CLUSTERING"
-    )
+    print("SPRINT 6 - DAY 36 KMEANS CLUSTERING")
     print("=" * 90)
 
-    print(
-        f"\nCompanies clustered: "
-        f"{len(output)}"
-    )
+    print(f"\nCompanies clustered: " f"{len(output)}")
 
-    print(
-        f"Clusters assigned: "
-        f"{output['cluster_id'].nunique()}"
-    )
+    print(f"Clusters assigned: " f"{output['cluster_id'].nunique()}")
 
-    print(
-        "\nCluster distribution:"
-    )
+    print("\nCluster distribution:")
 
-    print(
-        output[
-            "cluster_id"
-        ]
-        .value_counts()
-        .sort_index()
-        .to_string()
-    )
+    print(output["cluster_id"].value_counts().sort_index().to_string())
 
-    print(
-        "\nImputation methods:"
-    )
+    print("\nImputation methods:")
 
     if audit.empty:
-        print(
-            "No imputation required."
-        )
+        print("No imputation required.")
     else:
-        print(
-            audit[
-                "method"
-            ]
-            .value_counts()
-            .to_string()
-        )
+        print(audit["method"].value_counts().to_string())
 
-    global_fallbacks = audit[
-        audit["method"]
-        == "GLOBAL_MEDIAN_FALLBACK"
-    ]
+    global_fallbacks = audit[audit["method"] == "GLOBAL_MEDIAN_FALLBACK"]
 
-    print(
-        "\nGlobal median fallbacks:"
-    )
+    print("\nGlobal median fallbacks:")
 
     if global_fallbacks.empty:
         print("None")
@@ -513,26 +363,16 @@ def run_clustering() -> pd.DataFrame:
                     "feature",
                     "value",
                 ]
-            ].to_string(
-                index=False
-            )
+            ].to_string(index=False)
         )
 
-    print(
-        f"\nSaved: {OUTPUT_PATH}"
-    )
+    print(f"\nSaved: {OUTPUT_PATH}")
 
-    print(
-        f"Saved: {ELBOW_PATH}"
-    )
+    print(f"Saved: {ELBOW_PATH}")
 
-    print(
-        f"Saved: {audit_path}"
-    )
+    print(f"Saved: {audit_path}")
 
-    print(
-        "\nDAY 36 KMEANS CLUSTERING: PASS"
-    )
+    print("\nDAY 36 KMEANS CLUSTERING: PASS")
 
     return output
 

@@ -1,4 +1,5 @@
 import re
+
 import pandas as pd
 
 
@@ -54,9 +55,7 @@ def normalize_year(value):
             if 1900 <= year <= 2100:
                 return f"{year}-03"
 
-        raise ValueError(
-            f"Unsupported numeric year format: {value}"
-        )
+        raise ValueError(f"Unsupported numeric year format: {value}")
 
     value = str(value).strip()
 
@@ -79,9 +78,7 @@ def normalize_year(value):
         if 1 <= month <= 12:
             return f"{year}-{month:02d}"
 
-        raise ValueError(
-            f"Invalid month in year format: {value}"
-        )
+        raise ValueError(f"Invalid month in year format: {value}")
 
     # -----------------------------------------
     # Numeric string year
@@ -167,9 +164,7 @@ def normalize_year(value):
         year = int(match.group(2))
 
         if month_text not in month_map:
-            raise ValueError(
-                f"Unsupported month: {month_text}"
-            )
+            raise ValueError(f"Unsupported month: {month_text}")
 
         if year < 100:
             year += 2000
@@ -182,6 +177,4 @@ def normalize_year(value):
     # Unsupported period
     # -----------------------------------------
 
-    raise ValueError(
-        f"Unsupported year format: {value}"
-    )
+    raise ValueError(f"Unsupported year format: {value}")

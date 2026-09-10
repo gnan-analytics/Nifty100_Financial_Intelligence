@@ -2,17 +2,17 @@ from pathlib import Path
 
 from src.etl.loader import (
     CORE_DIR,
-    SUPPLEMENTARY_DIR,
     CORE_FILES,
+    SUPPLEMENTARY_DIR,
     SUPPLEMENTARY_FILES,
     load_core_datasets,
     load_supplementary_datasets,
 )
 
-
 # =========================================================
 # FILE EXISTENCE TESTS
 # =========================================================
+
 
 def test_core_files_exist():
     for filename in CORE_FILES:
@@ -28,18 +28,15 @@ def test_supplementary_files_exist():
 # FILE COUNT TESTS
 # =========================================================
 
+
 def test_core_file_count():
-    files = list(
-        Path(CORE_DIR).glob("*.xlsx")
-    )
+    files = list(Path(CORE_DIR).glob("*.xlsx"))
 
     assert len(files) == 7
 
 
 def test_supplementary_file_count():
-    files = list(
-        Path(SUPPLEMENTARY_DIR).glob("*.xlsx")
-    )
+    files = list(Path(SUPPLEMENTARY_DIR).glob("*.xlsx"))
 
     assert len(files) == 5
 
@@ -47,6 +44,7 @@ def test_supplementary_file_count():
 # =========================================================
 # CORE DATASET LOAD TEST
 # =========================================================
+
 
 def test_load_core_datasets():
     datasets = load_core_datasets()
@@ -66,10 +64,9 @@ def test_load_core_datasets():
 # SUPPLEMENTARY DATASET LOAD TEST
 # =========================================================
 
+
 def test_load_supplementary_datasets():
-    datasets = (
-        load_supplementary_datasets()
-    )
+    datasets = load_supplementary_datasets()
 
     assert len(datasets) == 5
 
@@ -85,68 +82,37 @@ def test_load_supplementary_datasets():
 # AFTER DQ-02 DEDUPLICATION
 # =========================================================
 
+
 def test_companies_row_count():
     datasets = load_core_datasets()
 
-    assert (
-        len(datasets["companies"])
-        == 92
-    )
+    assert len(datasets["companies"]) == 92
 
 
 def test_profitandloss_row_count():
     datasets = load_core_datasets()
 
-    assert (
-        len(
-            datasets[
-                "profitandloss"
-            ]
-        )
-        == 1263
-    )
+    assert len(datasets["profitandloss"]) == 1263
 
 
 def test_balancesheet_row_count():
     datasets = load_core_datasets()
 
-    assert (
-        len(
-            datasets[
-                "balancesheet"
-            ]
-        )
-        == 1225
-    )
+    assert len(datasets["balancesheet"]) == 1225
 
 
 def test_cashflow_row_count():
     datasets = load_core_datasets()
 
-    assert (
-        len(
-            datasets[
-                "cashflow"
-            ]
-        )
-        == 1152
-    )
+    assert len(datasets["cashflow"]) == 1152
 
 
 # =========================================================
 # SUPPLEMENTARY ROW COUNT TESTS
 # =========================================================
 
-def test_stock_prices_row_count():
-    datasets = (
-        load_supplementary_datasets()
-    )
 
-    assert (
-        len(
-            datasets[
-                "stock_prices"
-            ]
-        )
-        == 5520
-    )
+def test_stock_prices_row_count():
+    datasets = load_supplementary_datasets()
+
+    assert len(datasets["stock_prices"]) == 5520

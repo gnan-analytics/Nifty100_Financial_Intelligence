@@ -3,17 +3,17 @@ import pytest
 from src.analytics.ratios import (
     calculate_net_profit_margin,
     calculate_operating_profit_margin,
-    cross_check_opm,
-    calculate_roe,
-    calculate_roce,
     calculate_roa,
+    calculate_roce,
+    calculate_roe,
+    cross_check_opm,
     evaluate_roce_benchmark,
 )
-
 
 # =========================================================
 # TEST 1 — NET PROFIT MARGIN NORMAL CASE
 # =========================================================
+
 
 def test_net_profit_margin_normal():
     result = calculate_net_profit_margin(
@@ -28,6 +28,7 @@ def test_net_profit_margin_normal():
 # TEST 2 — ZERO SALES
 # =========================================================
 
+
 def test_net_profit_margin_zero_sales():
     result = calculate_net_profit_margin(
         net_profit=200,
@@ -41,6 +42,7 @@ def test_net_profit_margin_zero_sales():
 # TEST 3 — OPERATING PROFIT MARGIN
 # =========================================================
 
+
 def test_operating_profit_margin_normal():
     result = calculate_operating_profit_margin(
         operating_profit=250,
@@ -53,6 +55,7 @@ def test_operating_profit_margin_normal():
 # =========================================================
 # TEST 4 — OPM CROSS-CHECK MISMATCH
 # =========================================================
+
 
 def test_opm_cross_check_mismatch():
     result = cross_check_opm(
@@ -72,6 +75,7 @@ def test_opm_cross_check_mismatch():
 # TEST 5 — ROE NORMAL CASE
 # =========================================================
 
+
 def test_roe_normal():
     result = calculate_roe(
         net_profit=200,
@@ -86,6 +90,7 @@ def test_roe_normal():
 # TEST 6 — NEGATIVE EQUITY
 # =========================================================
 
+
 def test_roe_negative_equity():
     result = calculate_roe(
         net_profit=100,
@@ -99,6 +104,7 @@ def test_roe_negative_equity():
 # =========================================================
 # TEST 7 — ROCE NORMAL CASE
 # =========================================================
+
 
 def test_roce_normal():
     result = calculate_roce(
@@ -115,6 +121,7 @@ def test_roce_normal():
 # TEST 8 — ROA ZERO ASSETS
 # =========================================================
 
+
 def test_roa_zero_assets():
     result = calculate_roa(
         net_profit=200,
@@ -127,6 +134,7 @@ def test_roa_zero_assets():
 # =========================================================
 # TEST 9 — FINANCIALS SECTOR ROCE BENCHMARK
 # =========================================================
+
 
 def test_financial_roce_sector_benchmark():
     result = evaluate_roce_benchmark(

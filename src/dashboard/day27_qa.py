@@ -1,46 +1,43 @@
-﻿from pathlib import Path
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from src.dashboard.utils.db import (
+    get_bs,
+    get_capital_allocation,
+    get_cf,
     get_companies,
     get_company,
-    get_ratios,
-    get_pl,
-    get_bs,
-    get_cf,
-    get_sectors,
-    get_sector_for_company,
-    get_peer_groups,
-    get_peers,
-    get_peer_percentiles,
-    get_market_cap,
-    get_valuation,
-    get_pros_cons,
-    get_documents,
-    get_capital_allocation,
+    get_company_trends,
     get_dashboard_master,
     get_dashboard_year,
-    get_screener_data,
+    get_documents,
     get_peer_dashboard,
-    get_company_trends,
-    get_sector_dashboard,
+    get_peer_groups,
+    get_peer_percentiles,
+    get_pl,
+    get_pros_cons,
+    get_ratios,
     get_report_companies,
+    get_screener_data,
+    get_sector_dashboard,
+    get_sector_for_company,
+    get_sectors,
+    get_valuation,
 )
 
-
-PROJECT_ROOT = Path(
-    __file__
-).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 # ============================================================
 # HELPERS
 # ============================================================
 
+
 def heading(text):
+    """Handle heading."""
     print()
     print("=" * 80)
     print(text)
@@ -48,33 +45,29 @@ def heading(text):
 
 
 def pass_msg(text):
-    print(
-        f"[PASS] {text}"
-    )
+    """Handle pass msg."""
+    print(f"[PASS] {text}")
 
 
 def safe_assert(
     condition,
     message,
 ):
+    """Handle safe assert."""
     if not condition:
-        raise AssertionError(
-            message
-        )
+        raise AssertionError(message)
 
-    pass_msg(
-        message
-    )
+    pass_msg(message)
 
 
 # ============================================================
 # 1. CORE DASHBOARD DATA
 # ============================================================
 
+
 def test_core_dashboard():
-    heading(
-        "1. CORE DASHBOARD DATA"
-    )
+    """Run core dashboard."""
+    heading("1. CORE DASHBOARD DATA")
 
     companies = get_companies()
 
@@ -84,9 +77,7 @@ def test_core_dashboard():
     )
 
     safe_assert(
-        companies[
-            "company_id"
-        ].nunique() == 92,
+        companies["company_id"].nunique() == 92,
         "All dashboard tickers are unique",
     )
 
@@ -116,18 +107,16 @@ def test_core_dashboard():
 # 2. HOME SCREEN — 2019 TO 2024
 # ============================================================
 
+
 def test_home_screen():
-    heading(
-        "2. HOME SCREEN"
-    )
+    """Run home screen."""
+    heading("2. HOME SCREEN")
 
     for year in range(
         2019,
         2025,
     ):
-        df = get_dashboard_year(
-            year
-        )
+        df = get_dashboard_year(year)
 
         safe_assert(
             len(df) == 92,
@@ -147,7 +136,9 @@ def test_home_screen():
 # 3. TEST 10 TICKERS ACROSS SECTORS
 # ============================================================
 
+
 def choose_test_tickers():
+    """Choose test tickers."""
     sectors = get_sectors().copy()
 
     sectors = sectors.dropna(
@@ -158,8 +149,7 @@ def choose_test_tickers():
     )
 
     selected = (
-        sectors
-        .sort_values(
+        sectors.sort_values(
             [
                 "broad_sector",
                 "company_id",
@@ -172,23 +162,14 @@ def choose_test_tickers():
         .first()
     )
 
-    tickers = selected[
-        "company_id"
-    ].tolist()
+    tickers = selected["company_id"].tolist()
 
     if len(tickers) < 10:
-        extras = (
-            get_companies()[
-                "company_id"
-            ]
-            .tolist()
-        )
+        extras = get_companies()["company_id"].tolist()
 
         for ticker in extras:
             if ticker not in tickers:
-                tickers.append(
-                    ticker
-                )
+                tickers.append(ticker)
 
             if len(tickers) >= 10:
                 break
@@ -197,9 +178,8 @@ def choose_test_tickers():
 
 
 def test_profile_screen():
-    heading(
-        "3. PROFILE SCREEN — 10 TICKERS"
-    )
+    """Run profile screen."""
+    heading("3. PROFILE SCREEN — 10 TICKERS")
 
     tickers = choose_test_tickers()
 
@@ -211,38 +191,21 @@ def test_profile_screen():
     for ticker in tickers:
         start = time.perf_counter()
 
-        company = get_company(
-            ticker
-        )
+        company = get_company(ticker)
 
-        ratios = get_ratios(
-            ticker
-        )
+        ratios = get_ratios(ticker)
 
-        pl = get_pl(
-            ticker
-        )
+        pl = get_pl(ticker)
 
-        bs = get_bs(
-            ticker
-        )
+        bs = get_bs(ticker)
 
-        cf = get_cf(
-            ticker
-        )
+        cf = get_cf(ticker)
 
-        sector = get_sector_for_company(
-            ticker
-        )
+        get_sector_for_company(ticker)
 
-        pros = get_pros_cons(
-            ticker
-        )
+        get_pros_cons(ticker)
 
-        elapsed = (
-            time.perf_counter()
-            - start
-        )
+        elapsed = time.perf_counter() - start
 
         safe_assert(
             len(company) == 1,
@@ -269,11 +232,7 @@ def test_profile_screen():
             f"{ticker}: cash flow loads",
         )
 
-        print(
-            f"    {ticker:<12} "
-            f"profile data load: "
-            f"{elapsed:.4f}s"
-        )
+        print(f"    {ticker:<12} " f"profile data load: " f"{elapsed:.4f}s")
 
         safe_assert(
             elapsed < 3.0,
@@ -285,12 +244,14 @@ def test_profile_screen():
 # 4. SCREENER EXTREME FILTER QA
 # ============================================================
 
+
 def apply_filter(
     df,
     column,
     op,
     value,
 ):
+    """Apply filter."""
     if column not in df.columns:
         return df
 
@@ -300,22 +261,17 @@ def apply_filter(
     )
 
     if op == ">=":
-        return df[
-            series >= value
-        ]
+        return df[series >= value]
 
     if op == "<=":
-        return df[
-            series <= value
-        ]
+        return df[series <= value]
 
     return df
 
 
 def test_screener():
-    heading(
-        "4. SCREENER QA"
-    )
+    """Run screener."""
+    heading("4. SCREENER QA")
 
     df = get_screener_data()
 
@@ -392,9 +348,7 @@ def test_screener():
     )
 
     # CSV export simulation
-    csv_data = normal.to_csv(
-        index=False
-    )
+    csv_data = normal.to_csv(index=False)
 
     safe_assert(
         len(csv_data) > 0,
@@ -406,26 +360,20 @@ def test_screener():
 # 5. PEER SCREEN QA
 # ============================================================
 
+
 def test_peers():
-    heading(
-        "5. PEER COMPARISON QA"
-    )
+    """Run peers."""
+    heading("5. PEER COMPARISON QA")
 
     groups = get_peer_groups()
 
     total_memberships = 0
     total_percentiles = 0
 
-    for group in groups[
-        "peer_group_name"
-    ]:
-        peers = get_peer_dashboard(
-            group
-        )
+    for group in groups["peer_group_name"]:
+        peers = get_peer_dashboard(group)
 
-        percentiles = get_peer_percentiles(
-            group
-        )
+        percentiles = get_peer_percentiles(group)
 
         safe_assert(
             not peers.empty,
@@ -437,13 +385,9 @@ def test_peers():
             f"{group}: percentiles load",
         )
 
-        total_memberships += len(
-            peers
-        )
+        total_memberships += len(peers)
 
-        total_percentiles += len(
-            percentiles
-        )
+        total_percentiles += len(percentiles)
 
     print(
         "    Peer memberships:",
@@ -470,17 +414,15 @@ def test_peers():
 # 6. TREND SCREEN QA
 # ============================================================
 
+
 def test_trends():
-    heading(
-        "6. TREND ANALYSIS QA"
-    )
+    """Run trends."""
+    heading("6. TREND ANALYSIS QA")
 
     tickers = choose_test_tickers()
 
     for ticker in tickers:
-        trends = get_company_trends(
-            ticker
-        )
+        trends = get_company_trends(ticker)
 
         safe_assert(
             not trends.empty,
@@ -492,20 +434,17 @@ def test_trends():
             f"{ticker}: trend year available",
         )
 
-        print(
-            f"    {ticker:<12} "
-            f"{len(trends)} periods"
-        )
+        print(f"    {ticker:<12} " f"{len(trends)} periods")
 
 
 # ============================================================
 # 7. SECTOR SCREEN QA
 # ============================================================
 
+
 def test_sectors():
-    heading(
-        "7. SECTOR ANALYSIS QA"
-    )
+    """Run sectors."""
+    heading("7. SECTOR ANALYSIS QA")
 
     df = get_sector_dashboard()
 
@@ -514,13 +453,7 @@ def test_sectors():
         "Sector dashboard contains 92 companies",
     )
 
-    sector_count = (
-        df[
-            "broad_sector"
-        ]
-        .dropna()
-        .nunique()
-    )
+    sector_count = df["broad_sector"].dropna().nunique()
 
     print(
         "    Broad sectors:",
@@ -532,19 +465,8 @@ def test_sectors():
         "Sector dropdown has available sectors",
     )
 
-    for sector in sorted(
-        df[
-            "broad_sector"
-        ]
-        .dropna()
-        .unique()
-    ):
-        subset = df[
-            df[
-                "broad_sector"
-            ]
-            == sector
-        ]
+    for sector in sorted(df["broad_sector"].dropna().unique()):
+        subset = df[df["broad_sector"] == sector]
 
         safe_assert(
             not subset.empty,
@@ -556,10 +478,10 @@ def test_sectors():
 # 8. CAPITAL ALLOCATION SCREEN QA
 # ============================================================
 
+
 def test_capital():
-    heading(
-        "8. CAPITAL ALLOCATION QA"
-    )
+    """Run capital."""
+    heading("8. CAPITAL ALLOCATION QA")
 
     df = get_capital_allocation()
 
@@ -591,17 +513,10 @@ def test_capital():
 
     temp = df.copy()
 
-    temp[
-        "_year_date"
-    ] = dates
+    temp["_year_date"] = dates
 
     latest = (
-        temp
-        .dropna(
-            subset=[
-                "_year_date"
-            ]
-        )
+        temp.dropna(subset=["_year_date"])
         .sort_values(
             [
                 "company_id",
@@ -617,22 +532,11 @@ def test_capital():
 
     companies = get_companies()
 
-    expected_ids = set(
-        companies[
-            "company_id"
-        ].astype(str)
-    )
+    expected_ids = set(companies["company_id"].astype(str))
 
-    classified_ids = set(
-        latest[
-            "company_id"
-        ].astype(str)
-    )
+    classified_ids = set(latest["company_id"].astype(str))
 
-    missing_ids = sorted(
-        expected_ids
-        - classified_ids
-    )
+    missing_ids = sorted(expected_ids - classified_ids)
 
     safe_assert(
         len(expected_ids) == 92,
@@ -649,34 +553,27 @@ def test_capital():
         "ATGL is the only company without capital-allocation source data",
     )
 
-    dashboard_latest = (
-        companies[
+    dashboard_latest = companies[
+        [
+            "company_id",
+            "company_name",
+        ]
+    ].merge(
+        latest[
             [
                 "company_id",
-                "company_name",
+                "year",
+                "cfo_sign",
+                "cfi_sign",
+                "cff_sign",
+                "pattern_label",
             ]
-        ]
-        .merge(
-            latest[
-                [
-                    "company_id",
-                    "year",
-                    "cfo_sign",
-                    "cfi_sign",
-                    "cff_sign",
-                    "pattern_label",
-                ]
-            ],
-            on="company_id",
-            how="left",
-        )
+        ],
+        on="company_id",
+        how="left",
     )
 
-    dashboard_latest[
-        "pattern_label"
-    ] = dashboard_latest[
-        "pattern_label"
-    ].fillna(
+    dashboard_latest["pattern_label"] = dashboard_latest["pattern_label"].fillna(
         "Data Unavailable"
     )
 
@@ -686,12 +583,7 @@ def test_capital():
     )
 
     safe_assert(
-        (
-            dashboard_latest[
-                "pattern_label"
-            ]
-            == "Data Unavailable"
-        ).sum() == 1,
+        (dashboard_latest["pattern_label"] == "Data Unavailable").sum() == 1,
         "Missing capital-allocation data is explicitly labelled",
     )
 
@@ -707,34 +599,24 @@ def test_capital():
 
     print(
         "    Allocation patterns:",
-        latest[
-            "pattern_label"
-        ].nunique(),
+        latest["pattern_label"].nunique(),
     )
 
     print()
 
-    print(
-        dashboard_latest[
-            "pattern_label"
-        ]
-        .value_counts()
-        .to_string()
-    )
+    print(dashboard_latest["pattern_label"].value_counts().to_string())
 
 
 # ============================================================
 # 9. REPORTS SCREEN QA
 # ============================================================
 
-def test_reports():
-    heading(
-        "9. ANNUAL REPORTS QA"
-    )
 
-    companies = (
-        get_report_companies()
-    )
+def test_reports():
+    """Run reports."""
+    heading("9. ANNUAL REPORTS QA")
+
+    companies = get_report_companies()
 
     safe_assert(
         not companies.empty,
@@ -746,30 +628,19 @@ def test_reports():
         len(companies),
     )
 
-    sample = companies.head(
-        10
-    )
+    sample = companies.head(10)
 
-    for ticker in sample[
-        "company_id"
-    ]:
-        docs = get_documents(
-            ticker
-        )
+    for ticker in sample["company_id"]:
+        docs = get_documents(ticker)
 
         safe_assert(
             not docs.empty,
             f"{ticker}: report records load",
         )
 
-        if (
-            "annual_report"
-            in docs.columns
-        ):
+        if "annual_report" in docs.columns:
             valid_urls = (
-                docs[
-                    "annual_report"
-                ]
+                docs["annual_report"]
                 .fillna("")
                 .astype(str)
                 .str.startswith(
@@ -781,33 +652,21 @@ def test_reports():
                 .sum()
             )
 
-            print(
-                f"    {ticker:<12} "
-                f"valid URL strings: "
-                f"{valid_urls}"
-            )
+            print(f"    {ticker:<12} " f"valid URL strings: " f"{valid_urls}")
 
 
 # ============================================================
 # 10. VALUATION QA
 # ============================================================
 
+
 def test_valuation():
-    heading(
-        "10. VALUATION MODULE QA"
-    )
+    """Run valuation."""
+    heading("10. VALUATION MODULE QA")
 
-    summary_path = (
-        PROJECT_ROOT
-        / "output"
-        / "valuation_summary.xlsx"
-    )
+    summary_path = PROJECT_ROOT / "output" / "valuation_summary.xlsx"
 
-    flags_path = (
-        PROJECT_ROOT
-        / "output"
-        / "valuation_flags.csv"
-    )
+    flags_path = PROJECT_ROOT / "output" / "valuation_flags.csv"
 
     safe_assert(
         summary_path.exists(),
@@ -819,13 +678,9 @@ def test_valuation():
         "valuation_flags.csv exists",
     )
 
-    summary = pd.read_excel(
-        summary_path
-    )
+    summary = pd.read_excel(summary_path)
 
-    flags = pd.read_csv(
-        flags_path
-    )
+    flags = pd.read_csv(flags_path)
 
     safe_assert(
         len(summary) == 92,
@@ -833,9 +688,7 @@ def test_valuation():
     )
 
     safe_assert(
-        summary[
-            "company_id"
-        ].nunique() == 92,
+        summary["company_id"].nunique() == 92,
         "Valuation tickers are unique",
     )
 
@@ -859,50 +712,32 @@ def test_valuation():
         )
 
     safe_assert(
-        summary[
-            "5yr_median_PE"
-        ].notna().sum() == 92,
+        summary["5yr_median_PE"].notna().sum() == 92,
         "5-year median P/E available for all companies",
     )
 
     safe_assert(
-        flags[
-            "flag"
-        ].isin(
+        flags["flag"]
+        .isin(
             [
                 "Caution",
                 "Discount",
             ]
-        ).all(),
+        )
+        .all(),
         "Flag CSV contains only Caution/Discount",
     )
 
     print()
-    print(
-        "    Valuation distribution:"
-    )
+    print("    Valuation distribution:")
 
-    print(
-        summary[
-            "flag"
-        ]
-        .value_counts()
-        .to_string()
-    )
+    print(summary["flag"].value_counts().to_string())
 
     # Check dashboard lookup
-    sample_tickers = (
-        summary[
-            "company_id"
-        ]
-        .head(10)
-        .tolist()
-    )
+    sample_tickers = summary["company_id"].head(10).tolist()
 
     for ticker in sample_tickers:
-        valuation = get_valuation(
-            ticker
-        )
+        valuation = get_valuation(ticker)
 
         safe_assert(
             not valuation.empty,
@@ -914,23 +749,19 @@ def test_valuation():
 # 11. MISSING / PARTIAL DATA SAFETY
 # ============================================================
 
+
 def test_missing_data():
-    heading(
-        "11. MISSING DATA SAFETY"
-    )
+    """Run missing data."""
+    heading("11. MISSING DATA SAFETY")
 
     # Fake partial row to reproduce UI formatting scenario
     partial = pd.DataFrame(
         [
             {
-                "company_id":
-                    "TEST",
-                "return_on_equity_pct":
-                    np.nan,
-                "pe_ratio":
-                    np.nan,
-                "free_cash_flow_cr":
-                    np.nan,
+                "company_id": "TEST",
+                "return_on_equity_pct": np.nan,
+                "pe_ratio": np.nan,
+                "free_cash_flow_cr": np.nan,
             }
         ]
     )
@@ -943,22 +774,15 @@ def test_missing_data():
     def display_value(
         value,
     ):
-        return (
-            "N/A"
-            if pd.isna(value)
-            else value
-        )
+        """Handle display value."""
+        return "N/A" if pd.isna(value) else value
 
     for column in [
         "return_on_equity_pct",
         "pe_ratio",
         "free_cash_flow_cr",
     ]:
-        result = display_value(
-            partial.iloc[0][
-                column
-            ]
-        )
+        result = display_value(partial.iloc[0][column])
 
         safe_assert(
             result == "N/A",
@@ -970,17 +794,12 @@ def test_missing_data():
 # 12. DASHBOARD PAGE FILES
 # ============================================================
 
-def test_dashboard_pages():
-    heading(
-        "12. DASHBOARD PAGE FILES"
-    )
 
-    page_dir = (
-        PROJECT_ROOT
-        / "src"
-        / "dashboard"
-        / "pages"
-    )
+def test_dashboard_pages():
+    """Run dashboard pages."""
+    heading("12. DASHBOARD PAGE FILES")
+
+    page_dir = PROJECT_ROOT / "src" / "dashboard" / "pages"
 
     expected = [
         "01_home.py",
@@ -994,10 +813,7 @@ def test_dashboard_pages():
     ]
 
     for filename in expected:
-        path = (
-            page_dir
-            / filename
-        )
+        path = page_dir / filename
 
         safe_assert(
             path.exists(),
@@ -1014,7 +830,9 @@ def test_dashboard_pages():
 # MAIN
 # ============================================================
 
+
 def main():
+    """Run the module entry point."""
     started = time.perf_counter()
 
     test_core_dashboard()
@@ -1030,24 +848,14 @@ def main():
     test_missing_data()
     test_dashboard_pages()
 
-    elapsed = (
-        time.perf_counter()
-        - started
-    )
+    elapsed = time.perf_counter() - started
 
-    heading(
-        "DAY 27 QA RESULT"
-    )
+    heading("DAY 27 QA RESULT")
 
-    print(
-        f"Total QA runtime: "
-        f"{elapsed:.2f}s"
-    )
+    print(f"Total QA runtime: " f"{elapsed:.2f}s")
 
     print()
-    print(
-        "DAY 27 DASHBOARD QA: PASS"
-    )
+    print("DAY 27 DASHBOARD QA: PASS")
 
 
 if __name__ == "__main__":

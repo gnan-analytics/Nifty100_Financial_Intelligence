@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import pandas as pd
 
 from src.analytics.peer import (
@@ -16,21 +16,13 @@ def test_metric_count():
 def test_exactly_11_peer_groups():
     peers = load_peer_groups()
 
-    assert (
-        peers["peer_group_name"]
-        .nunique()
-        == 11
-    )
+    assert peers["peer_group_name"].nunique() == 11
 
 
 def test_percent_rank_basic():
-    series = pd.Series(
-        [10, 20, 30, 40, 50]
-    )
+    series = pd.Series([10, 20, 30, 40, 50])
 
-    result = percent_rank_sql(
-        series
-    )
+    result = percent_rank_sql(series)
 
     expected = [
         0.0,
@@ -47,9 +39,7 @@ def test_percent_rank_basic():
 
 
 def test_percent_rank_inverse():
-    series = pd.Series(
-        [1, 2, 3, 4, 5]
-    )
+    series = pd.Series([1, 2, 3, 4, 5])
 
     result = percent_rank_sql(
         series,
@@ -71,13 +61,9 @@ def test_percent_rank_inverse():
 
 
 def test_percent_rank_ties():
-    series = pd.Series(
-        [10, 10, 20, 30]
-    )
+    series = pd.Series([10, 10, 20, 30])
 
-    result = percent_rank_sql(
-        series
-    )
+    result = percent_rank_sql(series)
 
     assert result.iloc[0] == 0.0
     assert result.iloc[1] == 0.0
@@ -99,28 +85,19 @@ def test_peer_percentile_output():
         "year",
     }
 
-    assert required.issubset(
-        df.columns
-    )
+    assert required.issubset(df.columns)
 
 
 def test_all_11_groups_present():
     df = calculate_peer_percentiles()
 
-    assert (
-        df["peer_group_name"]
-        .nunique()
-        == 11
-    )
+    assert df["peer_group_name"].nunique() == 11
 
 
 def test_all_10_metrics_present():
     df = calculate_peer_percentiles()
 
-    assert (
-        df["metric"].nunique()
-        == 10
-    )
+    assert df["metric"].nunique() == 10
 
 
 def test_no_duplicate_peer_metric():
@@ -140,31 +117,18 @@ def test_no_duplicate_peer_metric():
 def test_percentiles_in_valid_range():
     df = calculate_peer_percentiles()
 
-    values = df[
-        "percentile_rank"
-    ].dropna()
+    values = df["percentile_rank"].dropna()
 
-    assert (
-        values >= 0
-    ).all()
+    assert (values >= 0).all()
 
-    assert (
-        values <= 100
-    ).all()
+    assert (values <= 100).all()
 
 
 def test_debt_to_equity_is_inverse():
     df = calculate_peer_percentiles()
 
     subset = df[
-        (
-            df["peer_group_name"]
-            == "IT Services"
-        )
-        & (
-            df["metric"]
-            == "debt_to_equity"
-        )
+        (df["peer_group_name"] == "IT Services") & (df["metric"] == "debt_to_equity")
     ].dropna(
         subset=[
             "value",
@@ -173,37 +137,18 @@ def test_debt_to_equity_is_inverse():
     )
 
     if len(subset) >= 2:
-        lowest_de = subset.sort_values(
-            "value"
-        ).iloc[0]
+        lowest_de = subset.sort_values("value").iloc[0]
 
-        highest_de = subset.sort_values(
-            "value"
-        ).iloc[-1]
+        highest_de = subset.sort_values("value").iloc[-1]
 
-        assert (
-            lowest_de[
-                "percentile_rank"
-            ]
-            >=
-            highest_de[
-                "percentile_rank"
-            ]
-        )
+        assert lowest_de["percentile_rank"] >= highest_de["percentile_rank"]
 
 
 def test_it_services_highest_roe_gets_highest_percentile():
     df = calculate_peer_percentiles()
 
     subset = df[
-        (
-            df["peer_group_name"]
-            == "IT Services"
-        )
-        & (
-            df["metric"]
-            == "roe"
-        )
+        (df["peer_group_name"] == "IT Services") & (df["metric"] == "roe")
     ].dropna(
         subset=[
             "value",
@@ -213,13 +158,10 @@ def test_it_services_highest_roe_gets_highest_percentile():
 
     assert len(subset) > 0
 
-    highest_value = subset[
-        "value"
-    ].max()
+    highest_value = subset["value"].max()
 
     highest_percentile = subset.loc[
-        subset["value"]
-        == highest_value,
+        subset["value"] == highest_value,
         "percentile_rank",
     ].iloc[0]
 

@@ -1,0 +1,53 @@
+company_id,company_name,sector,latest_year,P/E,sector_median_PE,5yr_median_PE,PE_vs_sector_median_pct,P/B,EV/EBITDA,market_cap_crore,free_cash_flow_cr,FCF_yield_pct,flag
+ABB,Abbott India Ltd,Industrials,2024-03,75.58,47.16,62.63,60.28,4.48,12.63,1536236.24,1095.0,0.07,Caution
+BAJAJFINSV,Bajaj Finserv Ltd,Financials,2024-03,15.07,34.24,51.06,-55.99,6.08,39.72,1905112.17,-79634.0,-4.18,Discount
+BAJFINANCE,Bajaj Finance Ltd,Financials,2024-03,69.2,34.24,46.9,102.1,4.11,15.96,2473271.58,-79931.0,-3.23,Caution
+BANKBARODA,Bank of Baroda,Financials,2024-03,16.89,34.24,67.24,-50.67,4.15,24.7,590971.02,-7559.0,-1.28,Discount
+BEL,Bharat Electronics Ltd,Industrials,2024-03,17.89,47.16,52.67,-62.06,9.22,23.14,1354781.06,-1265.0,-0.09,Discount
+BHEL,"Bharat Heavy Electricals Limited
+",Industrials,2024-03,29.8,47.16,31.13,-36.8,11.43,21.59,540053.85,-2382.0,-0.44,Discount
+BOSCHLTD,Bosch Ltd,Consumer Discretionary,2024-03,58.43,38.01,31.28,53.74,6.47,16.07,2599556.05,1536.0,0.06,Caution
+BPCL,Bharat Petroleum Corporation Ltd,Energy,2024-03,68.15,44.92,35.8,51.73,0.72,26.59,468662.13,25415.0,5.42,Caution
+CHOLAFIN,Cholamandalam Investment & Finance Company Ltd,Financials,2024-03,16.79,34.24,33.3,-50.96,10.36,13.52,971931.96,-38538.0,-3.97,Discount
+COALINDIA,Coal India Ltd,Materials,2024-03,34.27,55.62,32.17,-38.39,14.75,25.15,454024.84,13617.0,3.0,Discount
+DMART,Avenue Supermarts Ltd,Consumer Discretionary,2024-03,72.53,38.01,37.82,90.84,11.71,36.84,3053088.97,278.0,0.01,Caution
+DRREDDY,Dr Reddys Laboratories Ltd,Healthcare,2024-03,11.73,47.06,13.03,-75.07,10.19,14.56,2441803.28,509.0,0.02,Discount
+EICHERMOT,Eicher Motors Ltd,Consumer Discretionary,2024-03,15.62,38.01,18.91,-58.9,13.61,19.29,222391.83,890.0,0.4,Discount
+GAIL,GAIL (India) Ltd,Energy,2024-03,25.84,44.92,30.66,-42.47,9.54,33.07,1531867.57,4360.0,0.28,Discount
+GODREJCP,Godrej Consumer Products Ltd,Consumer Staples,2024-03,33.59,50.95,40.79,-34.07,8.07,23.55,1327797.2,-1365.0,-0.1,Discount
+GRASIM,Grasim Industries Ltd,Industrials,2024-03,79.35,47.16,38.27,68.27,5.68,15.23,478951.82,-33833.0,-7.06,Caution
+HAL,Hindustan Aeronautics Ltd,Industrials,2024-03,71.89,47.16,51.22,52.45,3.65,8.76,2643616.86,1814.0,0.07,Caution
+HINDUNILVR,"Hindustan Unilever Ltd
+",Consumer Staples,2024-03,34.51,50.95,22.92,-32.27,11.88,7.52,548890.59,10145.0,1.85,Discount
+ICICIPRULI,ICICI Prudential Life Insurance Company Ltd,Financials,2024-03,20.83,34.24,36.03,-39.16,12.38,22.57,1596987.55,105.0,0.01,Discount
+INDIGO,Interglobe Aviation Ltd,Consumer Discretionary,2024-03,76.23,38.01,51.42,100.58,7.87,24.64,1040632.92,9424.0,0.91,Caution
+INDUSINDBK,IndusInd Bank Ltd,Financials,2024-03,8.99,34.24,51.73,-73.74,3.7,28.79,1807433.12,-17468.0,-0.97,Discount
+INFY,Infosys Ltd,Information Technology,2024-03,35.99,63.63,35.99,-43.44,8.97,36.7,1112279.92,20117.0,1.81,Discount
+IOC,"Indian Oil Corporation
+",Energy,2024-03,28.61,44.92,50.51,-36.3,4.24,33.71,1418164.33,39635.0,2.79,Discount
+IRCTC,Indian Railway Catering & Tourism Corporation Ltd,Consumer Discretionary,2024-03,60.44,38.01,36.42,59.03,5.74,32.47,1258520.29,667.0,0.05,Caution
+IRFC,Indian Railway Finance Corporation Ltd,Financials,2024-03,9.81,34.24,37.81,-71.35,3.91,16.66,2618348.58,7906.0,0.3,Discount
+JSWENERGY,JSW Energy Ltd,Energy,2024-03,24.79,44.92,36.57,-44.81,9.88,35.95,110870.53,-1963.0,-1.77,Discount
+LT,Larsen & Toubro Ltd,Industrials,2024-03,30.8,47.16,18.77,-34.68,2.48,16.63,1124597.5,20445.0,1.82,Discount
+M&M,"Mahindra & Mahindra Ltd
+",Consumer Discretionary,2024-03,14.22,38.01,34.84,-62.58,0.81,29.08,4173085.48,-11245.0,-0.27,Discount
+MARUTI,Maruti Suzuki India Ltd,Consumer Discretionary,2024-03,20.78,38.01,20.78,-45.32,8.26,29.97,1503863.63,4936.0,0.33,Discount
+MOTHERSON,Samvardhana Motherson International Ltd,Consumer Discretionary,2024-03,9.54,38.01,30.92,-74.9,2.38,33.39,146151.16,925.0,0.63,Discount
+NAUKRI,Info Edge (India) Ltd,Communication Services,2024-03,32.88,48.33,36.89,-31.97,8.33,11.87,563824.44,-150.0,-0.03,Discount
+NHPC,"NHPC Ltd
+",Energy,2024-03,71.17,44.92,59.63,58.45,13.74,18.26,1740404.25,970.0,0.06,Caution
+NTPC,NTPC Ltd,Energy,2024-03,30.8,44.92,54.44,-31.43,5.24,37.12,907823.11,8644.0,0.95,Discount
+ONGC,Oil & Natural Gas Corpn Ltd,Energy,2024-03,18.15,44.92,43.8,-59.59,10.36,11.72,390111.05,42060.0,10.78,Discount
+PIDILITIND,Pidilite Industries Ltd,Materials,2024-03,36.12,55.62,38.11,-35.06,12.3,5.36,162274.18,955.0,0.59,Discount
+PNB,Punjab National Bank,Financials,2024-03,19.29,34.24,20.42,-43.66,10.91,23.64,1825925.6,-29445.0,-1.61,Discount
+SBILIFE,SBI Life Insurance Company Ltd,Financials,2024-03,69.98,34.24,60.68,104.38,9.48,31.04,886097.71,-2099.0,-0.24,Caution
+SBIN,State Bank of India,Financials,2024-03,54.93,34.24,54.93,60.43,2.72,21.53,2400436.05,18156.0,0.76,Caution
+SHREECEM,Shree Cement Ltd,Materials,2024-03,25.87,55.62,32.7,-53.49,1.21,26.58,3154358.33,1929.0,0.06,Discount
+SHRIRAMFIN,"Shriram Finance Ltd
+",Financials,2024-03,68.53,34.24,37.85,100.15,7.91,28.82,868933.47,-31359.0,-3.61,Caution
+TATAMOTORS,Tata Motors Ltd,Consumer Discretionary,2024-03,67.07,38.01,34.17,76.48,0.93,15.35,1504106.64,45133.0,3.0,Caution
+TATAPOWER,"Tata Power Company Ltd
+",Energy,2024-03,14.5,44.92,24.7,-67.72,3.48,12.02,1647269.48,3569.0,0.22,Discount
+TITAN,"Titan Company Ltd
+",Consumer Discretionary,2024-03,10.13,38.01,26.55,-73.35,10.51,21.0,1793769.72,1506.0,0.08,Discount
+TRENT,Trent Ltd,Consumer Discretionary,2024-03,8.65,38.01,65.94,-77.24,11.82,34.65,571322.04,841.0,0.15,Discount

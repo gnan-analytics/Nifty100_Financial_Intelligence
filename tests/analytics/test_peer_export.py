@@ -1,4 +1,4 @@
-﻿from openpyxl import load_workbook
+from openpyxl import load_workbook
 
 from src.analytics.peer_export import (
     OUTPUT_PATH,
@@ -21,10 +21,7 @@ def test_exactly_11_sheets():
         data_only=True,
     )
 
-    assert (
-        len(wb.sheetnames)
-        == 11
-    )
+    assert len(wb.sheetnames) == 11
 
 
 def test_20_metric_columns():
@@ -44,10 +41,7 @@ def test_20_metric_columns():
         #
         # 20 metric columns:
         # 10 raw + 10 percentile
-        assert (
-            ws.max_column
-            == 23
-        )
+        assert ws.max_column == 23
 
 
 def test_each_sheet_has_median():
@@ -90,7 +84,8 @@ def test_each_sheet_has_benchmark():
         ]
 
         assert any(
-            value in (
+            value
+            in (
                 1,
                 True,
                 "1",
@@ -103,7 +98,4 @@ def test_each_sheet_has_benchmark():
 def test_workbook_validation():
     write_workbook()
 
-    assert (
-        validate_workbook()
-        is True
-    )
+    assert validate_workbook() is True

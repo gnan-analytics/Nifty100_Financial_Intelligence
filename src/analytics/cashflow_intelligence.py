@@ -1,14 +1,12 @@
-from pathlib import Path
 import sqlite3
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from src.analytics.cashflow_kpis import (
-    calculate_cfo_quality_score,
     calculate_capex_intensity,
+    calculate_cfo_quality_score,
 )
-
 
 ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = ROOT / "db" / "nifty100.db"
@@ -19,6 +17,7 @@ CAPITAL_ALLOCATION_CSV = ROOT / "output" / "capital_allocation.csv"
 
 
 def annual_rows(df):
+    """Return annual financial rows."""
     if df.empty:
         return df.copy()
 
@@ -26,9 +25,7 @@ def annual_rows(df):
 
     x["year"] = x["year"].astype(str)
 
-    march = x[
-        x["year"].str.endswith("-03")
-    ].copy()
+    march = x[x["year"].str.endswith("-03")].copy()
 
     if not march.empty:
         x = march
@@ -39,14 +36,11 @@ def annual_rows(df):
         errors="coerce",
     )
 
-    return (
-        x
-        .dropna(subset=["_date"])
-        .sort_values("_date")
-    )
+    return x.dropna(subset=["_date"]).sort_values("_date")
 
 
 def safe_float(value):
+    """Convert a value to float safely."""
     if value is None or pd.isna(value):
         return None
 
@@ -89,12 +83,11 @@ def calculate_fcf_cagr(values, years=5):
     if periods <= 0:
         return None
 
-    return (
-        (end / start) ** (1 / periods) - 1
-    ) * 100
+    return ((end / start) ** (1 / periods) - 1) * 100
 
 
 def latest_value(df, column):
+    """Handle latest value."""
     if df.empty or column not in df.columns:
         return None
 
@@ -115,6 +108,7 @@ def latest_value(df, column):
 
 
 def latest_two_values(df, column):
+    """Handle latest two values."""
     if df.empty or column not in df.columns:
         return []
 
@@ -129,6 +123,7 @@ def latest_two_values(df, column):
 
 
 def latest_capital_allocation(df):
+    """Handle latest capital allocation."""
     if df.empty:
         return "Data Unavailable"
 
@@ -137,9 +132,7 @@ def latest_capital_allocation(df):
     if x.empty:
         return "Data Unavailable"
 
-    value = x.iloc[-1].get(
-        "pattern_label"
-    )
+    value = x.iloc[-1].get("pattern_label")
 
     if pd.isna(value):
         return "Data Unavailable"
@@ -148,6 +141,7 @@ def latest_capital_allocation(df):
 
 
 def load_data():
+    """Load data."""
     with sqlite3.connect(DB_PATH) as conn:
 
         companies = pd.read_sql_query(
@@ -201,9 +195,7 @@ def load_data():
             conn,
         )
 
-    allocation = pd.read_csv(
-        CAPITAL_ALLOCATION_CSV
-    )
+    allocation = pd.read_csv(CAPITAL_ALLOCATION_CSV)
 
     frames = [
         companies,
@@ -217,12 +209,7 @@ def load_data():
 
     for df in frames:
         if "company_id" in df.columns:
-            df["company_id"] = (
-                df["company_id"]
-                .astype(str)
-                .str.strip()
-                .str.upper()
-            )
+            df["company_id"] = df["company_id"].astype(str).str.strip().str.upper()
 
     return (
         companies,
@@ -244,25 +231,16 @@ def build_company_intelligence(
     ratios,
     allocation,
 ):
-    cf = cashflow[
-        cashflow["company_id"] == company_id
-    ]
+    """Build company intelligence."""
+    cf = cashflow[cashflow["company_id"] == company_id]
 
-    pl = pnl[
-        pnl["company_id"] == company_id
-    ]
+    pl = pnl[pnl["company_id"] == company_id]
 
-    bs = balance[
-        balance["company_id"] == company_id
-    ]
+    bs = balance[balance["company_id"] == company_id]
 
-    rt = ratios[
-        ratios["company_id"] == company_id
-    ]
+    rt = ratios[ratios["company_id"] == company_id]
 
-    ca = allocation[
-        allocation["company_id"] == company_id
-    ]
+    ca = allocation[allocation["company_id"] == company_id]
 
     cf_annual = annual_rows(cf)
     pl_annual = annual_rows(pl)
@@ -285,34 +263,20 @@ def build_company_intelligence(
             .tolist()
         )
 
-    quality = calculate_cfo_quality_score(
-        quality_values
-    )
+    quality = calculate_cfo_quality_score(quality_values)
 
     # ---------------------------------------------
     # LATEST CAPEX INTENSITY
     # ---------------------------------------------
 
-    latest_cf = (
-        cf_annual.iloc[-1]
-        if not cf_annual.empty
-        else None
-    )
+    latest_cf = cf_annual.iloc[-1] if not cf_annual.empty else None
 
-    latest_pl = (
-        pl_annual.iloc[-1]
-        if not pl_annual.empty
-        else None
-    )
+    latest_pl = pl_annual.iloc[-1] if not pl_annual.empty else None
 
     if latest_cf is not None and latest_pl is not None:
         capex = calculate_capex_intensity(
-            latest_cf.get(
-                "investing_activity"
-            ),
-            latest_pl.get(
-                "sales"
-            ),
+            latest_cf.get("investing_activity"),
+            latest_pl.get("sales"),
         )
     else:
         capex = {
@@ -329,9 +293,7 @@ def build_company_intelligence(
     if not rt_annual.empty:
         fcf_values = (
             pd.to_numeric(
-                rt_annual[
-                    "free_cash_flow_cr"
-                ],
+                rt_annual["free_cash_flow_cr"],
                 errors="coerce",
             )
             .dropna()
@@ -366,26 +328,12 @@ def build_company_intelligence(
 
     if latest_cf is not None:
 
-        latest_cfo = safe_float(
-            latest_cf.get(
-                "operating_activity"
-            )
-        )
+        latest_cfo = safe_float(latest_cf.get("operating_activity"))
 
-        latest_cff = safe_float(
-            latest_cf.get(
-                "financing_activity"
-            )
-        )
+        latest_cff = safe_float(latest_cf.get("financing_activity"))
 
-        if (
-            latest_cfo is not None
-            and latest_cff is not None
-        ):
-            distress = (
-                latest_cfo < 0
-                and latest_cff > 0
-            )
+        if latest_cfo is not None and latest_cff is not None:
+            distress = latest_cfo < 0 and latest_cff > 0
 
     # ---------------------------------------------
     # DELEVERAGING
@@ -400,55 +348,32 @@ def build_company_intelligence(
         "borrowings",
     )
 
-    if (
-        latest_cff is not None
-        and latest_cff < 0
-        and len(borrowings) == 2
-    ):
+    if latest_cff is not None and latest_cff < 0 and len(borrowings) == 2:
         previous_borrowing = borrowings[0]
         latest_borrowing = borrowings[1]
 
-        deleveraging = (
-            latest_borrowing
-            < previous_borrowing
-        )
+        deleveraging = latest_borrowing < previous_borrowing
 
     # ---------------------------------------------
     # CAPITAL ALLOCATION
     # ---------------------------------------------
 
-    allocation_label = (
-        latest_capital_allocation(ca)
-    )
+    allocation_label = latest_capital_allocation(ca)
 
     return {
         "company_id": company_id,
         "sector": sector,
-        "cfo_quality_score": (
-            quality["average_ratio"]
-        ),
+        "cfo_quality_score": (quality["average_ratio"]),
         "cfo_quality_label": (
-            quality["label"]
-            if quality["label"]
-            else "Data Unavailable"
+            quality["label"] if quality["label"] else "Data Unavailable"
         ),
-        "capex_intensity_pct": (
-            capex["value"]
-        ),
-        "capex_label": (
-            capex["label"]
-            if capex["label"]
-            else "Data Unavailable"
-        ),
+        "capex_intensity_pct": (capex["value"]),
+        "capex_label": (capex["label"] if capex["label"] else "Data Unavailable"),
         "fcf_cagr_5yr": fcf_cagr,
-        "fcf_conversion_pct": (
-            fcf_conversion
-        ),
+        "fcf_conversion_pct": (fcf_conversion),
         "distress_flag": distress,
         "deleveraging_flag": deleveraging,
-        "capital_allocation_label": (
-            allocation_label
-        ),
+        "capital_allocation_label": (allocation_label),
         "_latest_cfo": latest_cfo,
         "_latest_cff": latest_cff,
         "_latest_net_profit": (
@@ -461,6 +386,7 @@ def build_company_intelligence(
 
 
 def main():
+    """Run the module entry point."""
     (
         companies,
         sectors,
@@ -514,16 +440,12 @@ def main():
         exist_ok=True,
     )
 
-    result[
-        required_columns
-    ].to_excel(
+    result[required_columns].to_excel(
         OUTPUT_XLSX,
         index=False,
     )
 
-    distress = result[
-        result["distress_flag"] == True
-    ][
+    distress = result[result["distress_flag"]][
         [
             "company_id",
             "sector",
@@ -556,76 +478,41 @@ def main():
     )
 
     print("\nCFO QUALITY:")
-    print(
-        result[
-            "cfo_quality_label"
-        ].value_counts(
-            dropna=False
-        ).to_string()
-    )
+    print(result["cfo_quality_label"].value_counts(dropna=False).to_string())
 
     print("\nCAPEX LABEL:")
-    print(
-        result[
-            "capex_label"
-        ].value_counts(
-            dropna=False
-        ).to_string()
-    )
+    print(result["capex_label"].value_counts(dropna=False).to_string())
 
     print(
         "\nDistress companies:",
-        int(
-            result[
-                "distress_flag"
-            ].sum()
-        ),
+        int(result["distress_flag"].sum()),
     )
 
     print(
         "Deleveraging companies:",
-        int(
-            result[
-                "deleveraging_flag"
-            ].sum()
-        ),
+        int(result["deleveraging_flag"].sum()),
     )
 
     print(
         "\nFCF CAGR available:",
-        result[
-            "fcf_cagr_5yr"
-        ].notna().sum(),
+        result["fcf_cagr_5yr"].notna().sum(),
     )
 
     print(
         "FCF conversion available:",
-        result[
-            "fcf_conversion_pct"
-        ].notna().sum(),
+        result["fcf_conversion_pct"].notna().sum(),
     )
 
     print(
         "\nCapital allocation unavailable:",
-        (
-            result[
-                "capital_allocation_label"
-            ]
-            == "Data Unavailable"
-        ).sum(),
+        (result["capital_allocation_label"] == "Data Unavailable").sum(),
     )
 
-    print(
-        f"\nCreated: {OUTPUT_XLSX}"
-    )
+    print(f"\nCreated: {OUTPUT_XLSX}")
 
-    print(
-        f"Created: {DISTRESS_CSV}"
-    )
+    print(f"Created: {DISTRESS_CSV}")
 
-    print(
-        "\nDAY 31 GENERATOR: PASS"
-    )
+    print("\nDAY 31 GENERATOR: PASS")
 
 
 if __name__ == "__main__":

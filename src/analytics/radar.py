@@ -1,19 +1,17 @@
-﻿from pathlib import Path
 import sqlite3
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
+from src.analytics.peer import (
+    load_peer_groups,
+)
 from src.screener.engine import (
     DB_PATH,
     PROJECT_ROOT,
     load_screener_dataframe,
 )
-from src.analytics.peer import (
-    load_peer_groups,
-)
-
 
 RADAR_DIR = PROJECT_ROOT / "reports" / "radar_charts"
 
@@ -32,6 +30,7 @@ RADAR_METRICS = [
 def load_peer_percentiles(
     db_path=DB_PATH,
 ):
+    """Load peer percentiles."""
     with sqlite3.connect(db_path) as conn:
         df = pd.read_sql_query(
             """
@@ -53,9 +52,8 @@ def load_peer_percentiles(
 def load_company_scores(
     db_path=DB_PATH,
 ):
-    df = load_screener_dataframe(
-        db_path
-    )
+    """Load company scores."""
+    df = load_screener_dataframe(db_path)
 
     cols = [
         "company_id",
@@ -72,62 +70,34 @@ def build_group_radar_data(
     percentile_df,
     score_df,
 ):
-    group = percentile_df[
-        percentile_df["peer_group_name"]
-        == group_name
-    ].copy()
+    """Build group radar data."""
+    group = percentile_df[percentile_df["peer_group_name"] == group_name].copy()
 
-    companies = sorted(
-        group["company_id"]
-        .dropna()
-        .unique()
-        .tolist()
-    )
+    companies = sorted(group["company_id"].dropna().unique().tolist())
 
     rows = []
 
     for company_id in companies:
-        row = {
-            "company_id": company_id
-        }
+        row = {"company_id": company_id}
 
-        company_metrics = group[
-            group["company_id"]
-            == company_id
-        ]
+        company_metrics = group[group["company_id"] == company_id]
 
         for metric_name, _ in RADAR_METRICS:
-            metric_row = company_metrics[
-                company_metrics["metric"]
-                == metric_name
-            ]
+            metric_row = company_metrics[company_metrics["metric"] == metric_name]
 
             if metric_row.empty:
                 row[metric_name] = np.nan
             else:
-                row[metric_name] = (
-                    metric_row[
-                        "percentile_rank"
-                    ].iloc[0]
-                )
+                row[metric_name] = metric_row["percentile_rank"].iloc[0]
 
-        score_row = score_df[
-            score_df["company_id"]
-            == company_id
-        ]
+        score_row = score_df[score_df["company_id"] == company_id]
 
         if score_row.empty:
-            row[
-                "composite_quality_score"
-            ] = np.nan
+            row["composite_quality_score"] = np.nan
         else:
-            row[
-                "composite_quality_score"
-            ] = (
-                score_row[
-                    "composite_quality_score"
-                ].iloc[0]
-            )
+            row["composite_quality_score"] = score_row["composite_quality_score"].iloc[
+                0
+            ]
 
         rows.append(row)
 
@@ -137,21 +107,15 @@ def build_group_radar_data(
 def prepare_radar_values(
     row,
 ):
-    labels = [
-        label
-        for _, label
-        in RADAR_METRICS
-    ] + [
-        "Composite Score"
-    ]
+    """Prepare radar values."""
+    labels = [label for _, label in RADAR_METRICS] + ["Composite Score"]
 
     values = [
         row.get(
             metric,
             np.nan,
         )
-        for metric, _
-        in RADAR_METRICS
+        for metric, _ in RADAR_METRICS
     ]
 
     values.append(
@@ -161,12 +125,7 @@ def prepare_radar_values(
         )
     )
 
-    values = [
-        0.0
-        if pd.isna(v)
-        else float(v)
-        for v in values
-    ]
+    values = [0.0 if pd.isna(v) else float(v) for v in values]
 
     return labels, values
 
@@ -177,46 +136,24 @@ def create_radar_chart(
     group_df,
     output_dir=RADAR_DIR,
 ):
+    """Create radar chart."""
     output_dir.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    company_row = group_df[
-        group_df["company_id"]
-        == company_id
-    ]
+    company_row = group_df[group_df["company_id"] == company_id]
 
     if company_row.empty:
         return None
 
-    company_row = (
-        company_row.iloc[0]
-        .to_dict()
-    )
+    company_row = company_row.iloc[0].to_dict()
 
-    peer_avg = (
-        group_df
-        .drop(
-            columns=["company_id"]
-        )
-        .mean(
-            numeric_only=True
-        )
-        .to_dict()
-    )
+    peer_avg = group_df.drop(columns=["company_id"]).mean(numeric_only=True).to_dict()
 
-    labels, company_values = (
-        prepare_radar_values(
-            company_row
-        )
-    )
+    labels, company_values = prepare_radar_values(company_row)
 
-    _, peer_values = (
-        prepare_radar_values(
-            peer_avg
-        )
-    )
+    _, peer_values = prepare_radar_values(peer_avg)
 
     count = len(labels)
 
@@ -229,17 +166,11 @@ def create_radar_chart(
 
     angles += angles[:1]
 
-    company_values += (
-        company_values[:1]
-    )
+    company_values += company_values[:1]
 
-    peer_values += (
-        peer_values[:1]
-    )
+    peer_values += peer_values[:1]
 
-    fig = plt.figure(
-        figsize=(9, 9)
-    )
+    fig = plt.figure(figsize=(9, 9))
 
     ax = fig.add_subplot(
         111,
@@ -267,9 +198,7 @@ def create_radar_chart(
         label="Peer Average",
     )
 
-    ax.set_xticks(
-        angles[:-1]
-    )
+    ax.set_xticks(angles[:-1])
 
     ax.set_xticklabels(
         labels,
@@ -281,13 +210,9 @@ def create_radar_chart(
         100,
     )
 
-    ax.set_yticks(
-        [20, 40, 60, 80, 100]
-    )
+    ax.set_yticks([20, 40, 60, 80, 100])
 
-    ax.set_yticklabels(
-        ["20", "40", "60", "80", "100"]
-    )
+    ax.set_yticklabels(["20", "40", "60", "80", "100"])
 
     ax.set_title(
         f"{company_id}\n{group_name}",
@@ -304,20 +229,11 @@ def create_radar_chart(
         ),
     )
 
-    safe_group = (
-        group_name
-        .replace("/", "-")
-        .replace("\\", "-")
-        .replace(" ", "_")
-    )
+    safe_group = group_name.replace("/", "-").replace("\\", "-").replace(" ", "_")
 
-    filename = (
-        f"{safe_group}_{company_id}_radar.png"
-    )
+    filename = f"{safe_group}_{company_id}_radar.png"
 
-    output_path = (
-        output_dir / filename
-    )
+    output_path = output_dir / filename
 
     plt.tight_layout()
     plt.savefig(
@@ -335,26 +251,20 @@ def create_standalone_chart(
     score_df,
     output_dir=RADAR_DIR,
 ):
+    """Create standalone chart."""
     output_dir.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    row = score_df[
-        score_df["company_id"]
-        == company_id
-    ]
+    row = score_df[score_df["company_id"] == company_id]
 
     if row.empty:
         return None
 
-    company_score = row[
-        "composite_quality_score"
-    ].iloc[0]
+    company_score = row["composite_quality_score"].iloc[0]
 
-    nifty_avg = score_df[
-        "composite_quality_score"
-    ].mean()
+    nifty_avg = score_df["composite_quality_score"].mean()
 
     if pd.isna(company_score):
         company_score = 0.0
@@ -362,9 +272,7 @@ def create_standalone_chart(
     if pd.isna(nifty_avg):
         nifty_avg = 0.0
 
-    fig = plt.figure(
-        figsize=(7, 5)
-    )
+    fig = plt.figure(figsize=(7, 5))
 
     ax = fig.add_subplot(111)
 
@@ -384,13 +292,9 @@ def create_standalone_chart(
         100,
     )
 
-    ax.set_ylabel(
-        "Composite Quality Score"
-    )
+    ax.set_ylabel("Composite Quality Score")
 
-    ax.set_title(
-        f"{company_id} vs Nifty100 Average"
-    )
+    ax.set_title(f"{company_id} vs Nifty100 Average")
 
     for idx, value in enumerate(
         [
@@ -405,10 +309,7 @@ def create_standalone_chart(
             ha="center",
         )
 
-    output_path = (
-        output_dir
-        / f"Standalone_{company_id}.png"
-    )
+    output_path = output_dir / f"Standalone_{company_id}.png"
 
     plt.tight_layout()
     plt.savefig(
@@ -424,49 +325,28 @@ def create_standalone_chart(
 def generate_all_radar_charts(
     db_path=DB_PATH,
 ):
+    """Generate all radar charts."""
     RADAR_DIR.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    percentile_df = (
-        load_peer_percentiles(
-            db_path
-        )
-    )
+    percentile_df = load_peer_percentiles(db_path)
 
-    score_df = (
-        load_company_scores(
-            db_path
-        )
-    )
+    score_df = load_company_scores(db_path)
 
-    peer_groups = (
-        load_peer_groups(
-            db_path
-        )
-    )
+    peer_groups = load_peer_groups(db_path)
 
     created = []
 
-    for group_name in sorted(
-        peer_groups[
-            "peer_group_name"
-        ].unique()
-    ):
-        group_df = (
-            build_group_radar_data(
-                group_name,
-                percentile_df,
-                score_df,
-            )
+    for group_name in sorted(peer_groups["peer_group_name"].unique()):
+        group_df = build_group_radar_data(
+            group_name,
+            percentile_df,
+            score_df,
         )
 
-        for company_id in (
-            group_df[
-                "company_id"
-            ].tolist()
-        ):
+        for company_id in group_df["company_id"].tolist():
             path = create_radar_chart(
                 company_id,
                 group_name,
@@ -476,22 +356,11 @@ def generate_all_radar_charts(
             if path is not None:
                 created.append(path)
 
-    peer_company_ids = set(
-        peer_groups[
-            "company_id"
-        ].tolist()
-    )
+    peer_company_ids = set(peer_groups["company_id"].tolist())
 
-    all_company_ids = set(
-        score_df[
-            "company_id"
-        ].tolist()
-    )
+    all_company_ids = set(score_df["company_id"].tolist())
 
-    no_peer_ids = sorted(
-        all_company_ids
-        - peer_company_ids
-    )
+    no_peer_ids = sorted(all_company_ids - peer_company_ids)
 
     standalone_created = []
 
@@ -502,9 +371,7 @@ def generate_all_radar_charts(
         )
 
         if path is not None:
-            standalone_created.append(
-                path
-            )
+            standalone_created.append(path)
 
     return (
         created,
@@ -513,14 +380,13 @@ def generate_all_radar_charts(
 
 
 def main():
+    """Run the module entry point."""
     print("=" * 90)
     print("SPRINT 3 — DAY 19")
     print("RADAR CHART GENERATION")
     print("=" * 90)
 
-    peer_charts, standalone = (
-        generate_all_radar_charts()
-    )
+    peer_charts, standalone = generate_all_radar_charts()
 
     print()
     print(
@@ -535,8 +401,7 @@ def main():
 
     print(
         "Total charts:",
-        len(peer_charts)
-        + len(standalone),
+        len(peer_charts) + len(standalone),
     )
 
     print()

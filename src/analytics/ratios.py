@@ -2,7 +2,6 @@ import logging
 
 import pandas as pd
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -10,10 +9,12 @@ logger = logging.getLogger(__name__)
 # GENERIC SAFE DIVISION
 # =========================================================
 
+
 def safe_divide(
     numerator,
     denominator,
 ):
+    """Divide values safely."""
     if pd.isna(numerator):
         return None
 
@@ -37,10 +38,12 @@ def safe_divide(
 # DAY 08 — PROFITABILITY RATIOS
 # =========================================================
 
+
 def calculate_net_profit_margin(
     net_profit,
     sales,
 ):
+    """Calculate net profit margin."""
     result = safe_divide(
         net_profit,
         sales,
@@ -56,6 +59,7 @@ def calculate_operating_profit_margin(
     operating_profit,
     sales,
 ):
+    """Calculate operating profit margin."""
     result = safe_divide(
         operating_profit,
         sales,
@@ -75,11 +79,10 @@ def cross_check_opm(
     year=None,
     tolerance=1.0,
 ):
-    computed_opm = (
-        calculate_operating_profit_margin(
-            operating_profit,
-            sales,
-        )
+    """Handle cross check opm."""
+    computed_opm = calculate_operating_profit_margin(
+        operating_profit,
+        sales,
     )
 
     if computed_opm is None:
@@ -99,9 +102,7 @@ def cross_check_opm(
         }
 
     try:
-        source_opm = float(
-            source_opm_percentage
-        )
+        source_opm = float(source_opm_percentage)
 
     except (TypeError, ValueError):
         return {
@@ -111,14 +112,9 @@ def cross_check_opm(
             "mismatch": False,
         }
 
-    difference = abs(
-        computed_opm
-        - source_opm
-    )
+    difference = abs(computed_opm - source_opm)
 
-    mismatch = (
-        difference > tolerance
-    )
+    mismatch = difference > tolerance
 
     if mismatch:
         logger.warning(
@@ -144,47 +140,32 @@ def calculate_roe(
     equity_capital,
     reserves,
 ):
+    """Calculate roe."""
     values = [
         net_profit,
         equity_capital,
         reserves,
     ]
 
-    if any(
-        pd.isna(value)
-        for value in values
-    ):
+    if any(pd.isna(value) for value in values):
         return None
 
     try:
-        net_profit = float(
-            net_profit
-        )
+        net_profit = float(net_profit)
 
-        equity_capital = float(
-            equity_capital
-        )
+        equity_capital = float(equity_capital)
 
-        reserves = float(
-            reserves
-        )
+        reserves = float(reserves)
 
     except (TypeError, ValueError):
         return None
 
-    total_equity = (
-        equity_capital
-        + reserves
-    )
+    total_equity = equity_capital + reserves
 
     if total_equity <= 0:
         return None
 
-    return (
-        net_profit
-        / total_equity
-        * 100
-    )
+    return net_profit / total_equity * 100
 
 
 def calculate_roce(
@@ -193,6 +174,7 @@ def calculate_roce(
     reserves,
     borrowings,
 ):
+    """Calculate roce."""
     values = [
         ebit,
         equity_capital,
@@ -200,52 +182,34 @@ def calculate_roce(
         borrowings,
     ]
 
-    if any(
-        pd.isna(value)
-        for value in values
-    ):
+    if any(pd.isna(value) for value in values):
         return None
 
     try:
-        ebit = float(
-            ebit
-        )
+        ebit = float(ebit)
 
-        equity_capital = float(
-            equity_capital
-        )
+        equity_capital = float(equity_capital)
 
-        reserves = float(
-            reserves
-        )
+        reserves = float(reserves)
 
-        borrowings = float(
-            borrowings
-        )
+        borrowings = float(borrowings)
 
     except (TypeError, ValueError):
         return None
 
-    capital_employed = (
-        equity_capital
-        + reserves
-        + borrowings
-    )
+    capital_employed = equity_capital + reserves + borrowings
 
     if capital_employed <= 0:
         return None
 
-    return (
-        ebit
-        / capital_employed
-        * 100
-    )
+    return ebit / capital_employed * 100
 
 
 def calculate_roa(
     net_profit,
     total_assets,
 ):
+    """Calculate roa."""
     result = safe_divide(
         net_profit,
         total_assets,
@@ -260,18 +224,14 @@ def calculate_roa(
 def is_financial_sector(
     broad_sector,
 ):
+    """Return whether financial sector."""
     if broad_sector is None:
         return False
 
     if pd.isna(broad_sector):
         return False
 
-    return (
-        str(broad_sector)
-        .strip()
-        .lower()
-        == "financials"
-    )
+    return str(broad_sector).strip().lower() == "financials"
 
 
 def evaluate_roce_benchmark(
@@ -279,6 +239,7 @@ def evaluate_roce_benchmark(
     broad_sector,
     sector_median_roce=None,
 ):
+    """Evaluate roce benchmark."""
     if roce is None:
         return {
             "roce": None,
@@ -287,15 +248,8 @@ def evaluate_roce_benchmark(
             "above_benchmark": None,
         }
 
-    if is_financial_sector(
-        broad_sector
-    ):
-        if (
-            sector_median_roce is None
-            or pd.isna(
-                sector_median_roce
-            )
-        ):
+    if is_financial_sector(broad_sector):
+        if sector_median_roce is None or pd.isna(sector_median_roce):
             return {
                 "roce": roce,
                 "benchmark_type": "SECTOR_RELATIVE",
@@ -303,17 +257,13 @@ def evaluate_roce_benchmark(
                 "above_benchmark": None,
             }
 
-        benchmark = float(
-            sector_median_roce
-        )
+        benchmark = float(sector_median_roce)
 
         return {
             "roce": roce,
             "benchmark_type": "SECTOR_RELATIVE",
             "benchmark_value": benchmark,
-            "above_benchmark": (
-                roce > benchmark
-            ),
+            "above_benchmark": (roce > benchmark),
         }
 
     return {
@@ -327,6 +277,7 @@ def evaluate_roce_benchmark(
 # =========================================================
 # DAY 09 — LEVERAGE & EFFICIENCY RATIOS
 # =========================================================
+
 
 def calculate_debt_to_equity(
     borrowings,
@@ -351,24 +302,15 @@ def calculate_debt_to_equity(
         reserves,
     ]
 
-    if any(
-        pd.isna(value)
-        for value in values
-    ):
+    if any(pd.isna(value) for value in values):
         return None
 
     try:
-        borrowings = float(
-            borrowings
-        )
+        borrowings = float(borrowings)
 
-        equity_capital = float(
-            equity_capital
-        )
+        equity_capital = float(equity_capital)
 
-        reserves = float(
-            reserves
-        )
+        reserves = float(reserves)
 
     except (TypeError, ValueError):
         return None
@@ -376,18 +318,12 @@ def calculate_debt_to_equity(
     if borrowings == 0:
         return 0.0
 
-    total_equity = (
-        equity_capital
-        + reserves
-    )
+    total_equity = equity_capital + reserves
 
     if total_equity <= 0:
         return None
 
-    return (
-        borrowings
-        / total_equity
-    )
+    return borrowings / total_equity
 
 
 def calculate_high_leverage_flag(
@@ -404,15 +340,10 @@ def calculate_high_leverage_flag(
     if debt_to_equity is None:
         return False
 
-    if is_financial_sector(
-        broad_sector
-    ):
+    if is_financial_sector(broad_sector):
         return False
 
-    return (
-        debt_to_equity
-        > threshold
-    )
+    return debt_to_equity > threshold
 
 
 def calculate_interest_coverage(
@@ -436,24 +367,15 @@ def calculate_interest_coverage(
         interest,
     ]
 
-    if any(
-        pd.isna(value)
-        for value in values
-    ):
+    if any(pd.isna(value) for value in values):
         return None
 
     try:
-        operating_profit = float(
-            operating_profit
-        )
+        operating_profit = float(operating_profit)
 
-        other_income = float(
-            other_income
-        )
+        other_income = float(other_income)
 
-        interest = float(
-            interest
-        )
+        interest = float(interest)
 
     except (TypeError, ValueError):
         return None
@@ -461,10 +383,7 @@ def calculate_interest_coverage(
     if interest == 0:
         return None
 
-    return (
-        operating_profit
-        + other_income
-    ) / interest
+    return (operating_profit + other_income) / interest
 
 
 def get_icr_label(
@@ -482,9 +401,7 @@ def get_icr_label(
         return None
 
     try:
-        interest = float(
-            interest
-        )
+        interest = float(interest)
 
     except (TypeError, ValueError):
         return None
@@ -510,10 +427,7 @@ def calculate_icr_warning_flag(
     if interest_coverage is None:
         return False
 
-    return (
-        interest_coverage
-        < threshold
-    )
+    return interest_coverage < threshold
 
 
 def calculate_net_debt(
@@ -537,21 +451,14 @@ def calculate_net_debt(
         return None
 
     try:
-        borrowings = float(
-            borrowings
-        )
+        borrowings = float(borrowings)
 
-        investments = float(
-            investments
-        )
+        investments = float(investments)
 
     except (TypeError, ValueError):
         return None
 
-    return (
-        borrowings
-        - investments
-    )
+    return borrowings - investments
 
 
 def calculate_asset_turnover(
@@ -577,115 +484,63 @@ def calculate_asset_turnover(
 # FULL PROFITABILITY CALCULATION
 # =========================================================
 
+
 def calculate_profitability_ratios(
     pnl_row,
     bs_row,
     broad_sector=None,
     sector_median_roce=None,
 ):
+    """Calculate profitability ratios."""
     npm = calculate_net_profit_margin(
-        pnl_row.get(
-            "net_profit"
-        ),
-        pnl_row.get(
-            "sales"
-        ),
+        pnl_row.get("net_profit"),
+        pnl_row.get("sales"),
     )
 
     opm_check = cross_check_opm(
-        operating_profit=pnl_row.get(
-            "operating_profit"
-        ),
-        sales=pnl_row.get(
-            "sales"
-        ),
-        source_opm_percentage=pnl_row.get(
-            "opm_percentage"
-        ),
-        company_id=pnl_row.get(
-            "company_id"
-        ),
-        year=pnl_row.get(
-            "year"
-        ),
+        operating_profit=pnl_row.get("operating_profit"),
+        sales=pnl_row.get("sales"),
+        source_opm_percentage=pnl_row.get("opm_percentage"),
+        company_id=pnl_row.get("company_id"),
+        year=pnl_row.get("year"),
     )
 
     roe = calculate_roe(
-        net_profit=pnl_row.get(
-            "net_profit"
-        ),
-        equity_capital=bs_row.get(
-            "equity_capital"
-        ),
-        reserves=bs_row.get(
-            "reserves"
-        ),
+        net_profit=pnl_row.get("net_profit"),
+        equity_capital=bs_row.get("equity_capital"),
+        reserves=bs_row.get("reserves"),
     )
 
     roce = calculate_roce(
-        ebit=pnl_row.get(
-            "operating_profit"
-        ),
-        equity_capital=bs_row.get(
-            "equity_capital"
-        ),
-        reserves=bs_row.get(
-            "reserves"
-        ),
-        borrowings=bs_row.get(
-            "borrowings"
-        ),
+        ebit=pnl_row.get("operating_profit"),
+        equity_capital=bs_row.get("equity_capital"),
+        reserves=bs_row.get("reserves"),
+        borrowings=bs_row.get("borrowings"),
     )
 
     roa = calculate_roa(
-        net_profit=pnl_row.get(
-            "net_profit"
-        ),
-        total_assets=bs_row.get(
-            "total_assets"
-        ),
+        net_profit=pnl_row.get("net_profit"),
+        total_assets=bs_row.get("total_assets"),
     )
 
-    roce_benchmark = (
-        evaluate_roce_benchmark(
-            roce=roce,
-            broad_sector=broad_sector,
-            sector_median_roce=sector_median_roce,
-        )
+    roce_benchmark = evaluate_roce_benchmark(
+        roce=roce,
+        broad_sector=broad_sector,
+        sector_median_roce=sector_median_roce,
     )
 
     return {
         "net_profit_margin_pct": npm,
-        "operating_profit_margin_pct": (
-            opm_check["computed_opm"]
-        ),
-        "opm_source_pct": (
-            opm_check["source_opm"]
-        ),
-        "opm_difference_pct": (
-            opm_check["difference"]
-        ),
-        "opm_mismatch_flag": (
-            opm_check["mismatch"]
-        ),
+        "operating_profit_margin_pct": (opm_check["computed_opm"]),
+        "opm_source_pct": (opm_check["source_opm"]),
+        "opm_difference_pct": (opm_check["difference"]),
+        "opm_mismatch_flag": (opm_check["mismatch"]),
         "return_on_equity_pct": roe,
         "return_on_capital_employed_pct": roce,
         "return_on_assets_pct": roa,
-        "roce_benchmark_type": (
-            roce_benchmark[
-                "benchmark_type"
-            ]
-        ),
-        "roce_benchmark_value": (
-            roce_benchmark[
-                "benchmark_value"
-            ]
-        ),
-        "roce_above_benchmark": (
-            roce_benchmark[
-                "above_benchmark"
-            ]
-        ),
+        "roce_benchmark_type": (roce_benchmark["benchmark_type"]),
+        "roce_benchmark_value": (roce_benchmark["benchmark_value"]),
+        "roce_above_benchmark": (roce_benchmark["above_benchmark"]),
     }
 
 
@@ -693,77 +548,45 @@ def calculate_profitability_ratios(
 # FULL LEVERAGE / EFFICIENCY CALCULATION
 # =========================================================
 
+
 def calculate_leverage_efficiency_ratios(
     pnl_row,
     bs_row,
     broad_sector=None,
 ):
-    debt_to_equity = (
-        calculate_debt_to_equity(
-            borrowings=bs_row.get(
-                "borrowings"
-            ),
-            equity_capital=bs_row.get(
-                "equity_capital"
-            ),
-            reserves=bs_row.get(
-                "reserves"
-            ),
-        )
+    """Calculate leverage efficiency ratios."""
+    debt_to_equity = calculate_debt_to_equity(
+        borrowings=bs_row.get("borrowings"),
+        equity_capital=bs_row.get("equity_capital"),
+        reserves=bs_row.get("reserves"),
     )
 
-    high_leverage_flag = (
-        calculate_high_leverage_flag(
-            debt_to_equity,
-            broad_sector,
-        )
+    high_leverage_flag = calculate_high_leverage_flag(
+        debt_to_equity,
+        broad_sector,
     )
 
-    interest_coverage = (
-        calculate_interest_coverage(
-            operating_profit=pnl_row.get(
-                "operating_profit"
-            ),
-            other_income=pnl_row.get(
-                "other_income"
-            ),
-            interest=pnl_row.get(
-                "interest"
-            ),
-        )
+    interest_coverage = calculate_interest_coverage(
+        operating_profit=pnl_row.get("operating_profit"),
+        other_income=pnl_row.get("other_income"),
+        interest=pnl_row.get("interest"),
     )
 
     icr_label = get_icr_label(
         interest_coverage,
-        pnl_row.get(
-            "interest"
-        ),
+        pnl_row.get("interest"),
     )
 
-    icr_warning_flag = (
-        calculate_icr_warning_flag(
-            interest_coverage
-        )
-    )
+    icr_warning_flag = calculate_icr_warning_flag(interest_coverage)
 
     net_debt = calculate_net_debt(
-        borrowings=bs_row.get(
-            "borrowings"
-        ),
-        investments=bs_row.get(
-            "investments"
-        ),
+        borrowings=bs_row.get("borrowings"),
+        investments=bs_row.get("investments"),
     )
 
-    asset_turnover = (
-        calculate_asset_turnover(
-            sales=pnl_row.get(
-                "sales"
-            ),
-            total_assets=bs_row.get(
-                "total_assets"
-            ),
-        )
+    asset_turnover = calculate_asset_turnover(
+        sales=pnl_row.get("sales"),
+        total_assets=bs_row.get("total_assets"),
     )
 
     return {

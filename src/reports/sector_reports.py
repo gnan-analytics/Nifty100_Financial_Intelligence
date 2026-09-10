@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import re
 import sqlite3
 
@@ -18,7 +18,6 @@ from reportlab.platypus import (
     TableStyle,
     PageBreak,
 )
-
 
 ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = ROOT / "db" / "nifty100.db"
@@ -43,15 +42,14 @@ METRICS = [
 
 
 def annual_rows(df):
+    """Return annual financial rows."""
     if df.empty:
         return df.copy()
 
     out = df.copy()
     out["year"] = out["year"].astype(str)
 
-    march = out[
-        out["year"].str.endswith("-03")
-    ].copy()
+    march = out[out["year"].str.endswith("-03")].copy()
 
     if not march.empty:
         out = march
@@ -60,6 +58,7 @@ def annual_rows(df):
 
 
 def latest_annual(df):
+    """Return the latest annual financial row."""
     out = annual_rows(df)
 
     if out.empty:
@@ -69,6 +68,7 @@ def latest_annual(df):
 
 
 def safe_float(value):
+    """Convert a value to float safely."""
     try:
         if pd.isna(value):
             return np.nan
@@ -78,6 +78,7 @@ def safe_float(value):
 
 
 def fmt(value, decimals=1):
+    """Handle fmt."""
     value = safe_float(value)
 
     if np.isnan(value):
@@ -87,6 +88,7 @@ def fmt(value, decimals=1):
 
 
 def safe_filename(name):
+    """Handle safe filename."""
     value = re.sub(
         r"[^A-Za-z0-9]+",
         "_",
@@ -97,6 +99,7 @@ def safe_filename(name):
 
 
 def load_data():
+    """Load data."""
     with sqlite3.connect(DB_PATH) as conn:
         companies = pd.read_sql_query(
             """
@@ -141,12 +144,7 @@ def load_data():
         (ratios, "company_id"),
         (market, "company_id"),
     ]:
-        df[col] = (
-            df[col]
-            .astype(str)
-            .str.strip()
-            .str.upper()
-        )
+        df[col] = df[col].astype(str).str.strip().str.upper()
 
     return {
         "companies": companies,
@@ -157,6 +155,7 @@ def load_data():
 
 
 def build_latest_company_table(data):
+    """Build latest company table."""
     companies = data["companies"]
     peers = data["peers"]
     ratios = data["ratios"]
@@ -167,27 +166,15 @@ def build_latest_company_table(data):
     for peer in peers.itertuples():
         ticker = peer.company_id
 
-        company_rows = companies[
-            companies["id"] == ticker
-        ]
+        company_rows = companies[companies["id"] == ticker]
 
         company_name = (
-            company_rows.iloc[0]["company_name"]
-            if not company_rows.empty
-            else ticker
+            company_rows.iloc[0]["company_name"] if not company_rows.empty else ticker
         )
 
-        ratio_row = latest_annual(
-            ratios[
-                ratios["company_id"] == ticker
-            ]
-        )
+        ratio_row = latest_annual(ratios[ratios["company_id"] == ticker])
 
-        market_row = latest_annual(
-            market[
-                market["company_id"] == ticker
-            ]
-        )
+        market_row = latest_annual(market[market["company_id"] == ticker])
 
         record = {
             "peer_group_name": peer.peer_group_name,
@@ -197,24 +184,16 @@ def build_latest_company_table(data):
         }
 
         for metric, _ in METRICS:
-            if (
-                metric
-                in [
-                    "market_cap_crore",
-                    "pe_ratio",
-                ]
-            ):
+            if metric in [
+                "market_cap_crore",
+                "pe_ratio",
+            ]:
                 source = market_row
             else:
                 source = ratio_row
 
-            if (
-                source is not None
-                and metric in source.index
-            ):
-                record[metric] = safe_float(
-                    source[metric]
-                )
+            if source is not None and metric in source.index:
+                record[metric] = safe_float(source[metric])
             else:
                 record[metric] = np.nan
 
@@ -224,6 +203,7 @@ def build_latest_company_table(data):
 
 
 def styles():
+    """Handle styles."""
     base = getSampleStyleSheet()
 
     return {
@@ -304,6 +284,7 @@ def styles():
 
 
 def header(group_name, company_count, s):
+    """Handle header."""
     table = Table(
         [
             [
@@ -367,12 +348,11 @@ def header(group_name, company_count, s):
 
 
 def median_summary(group, s):
+    """Handle median summary."""
     medians = []
 
     for metric, label in METRICS:
-        value = group[metric].median(
-            skipna=True
-        )
+        value = group[metric].median(skipna=True)
 
         medians.append(
             [
@@ -463,14 +443,12 @@ def median_summary(group, s):
 
 
 def company_table(group, s):
+    """Handle company table."""
     headers = [
         "Ticker",
         "Company",
         "Benchmark",
-    ] + [
-        label.replace("\n", "<br/>")
-        for _, label in METRICS
-    ]
+    ] + [label.replace("\n", "<br/>") for _, label in METRICS]
 
     data = [
         [
@@ -499,9 +477,7 @@ def company_table(group, s):
                 s["cell"],
             ),
             Paragraph(
-                "Yes"
-                if row.is_benchmark == 1
-                else "",
+                "Yes" if row.is_benchmark == 1 else "",
                 s["cell_center"],
             ),
         ]
@@ -509,9 +485,7 @@ def company_table(group, s):
         for metric, _ in METRICS:
             values.append(
                 Paragraph(
-                    fmt(
-                        getattr(row, metric)
-                    ),
+                    fmt(getattr(row, metric)),
                     s["cell_center"],
                 )
             )
@@ -595,14 +569,13 @@ def company_table(group, s):
                 )
             )
 
-    table.setStyle(
-        TableStyle(commands)
-    )
+    table.setStyle(TableStyle(commands))
 
     return table
 
 
 def footer(canvas, doc):
+    """Handle footer."""
     canvas.saveState()
 
     canvas.setFont(
@@ -610,9 +583,7 @@ def footer(canvas, doc):
         7,
     )
 
-    canvas.setFillColor(
-        colors.HexColor("#667085")
-    )
+    canvas.setFillColor(colors.HexColor("#667085"))
 
     canvas.drawString(
         15 * mm,
@@ -633,15 +604,13 @@ def create_sector_report(
     group_name,
     group,
 ):
+    """Create sector report."""
     OUTPUT_DIR.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    path = (
-        OUTPUT_DIR
-        / f"{safe_filename(group_name)}_report.pdf"
-    )
+    path = OUTPUT_DIR / f"{safe_filename(group_name)}_report.pdf"
 
     s = styles()
 
@@ -698,28 +667,19 @@ def create_sector_report(
 
 
 def main():
+    """Run the module entry point."""
     print("=" * 90)
     print("SPRINT 5 - DAY 34 SECTOR REPORTS")
     print("=" * 90)
 
     data = load_data()
-    latest = build_latest_company_table(
-        data
-    )
+    latest = build_latest_company_table(data)
 
-    groups = sorted(
-        latest[
-            "peer_group_name"
-        ].dropna().unique()
-    )
+    groups = sorted(latest["peer_group_name"].dropna().unique())
 
-    print(
-        f"\nReporting groups: {len(groups)}"
-    )
+    print(f"\nReporting groups: {len(groups)}")
 
-    assert len(groups) == 11, (
-        f"Expected 11 reporting groups, got {len(groups)}"
-    )
+    assert len(groups) == 11, f"Expected 11 reporting groups, got {len(groups)}"
 
     generated = []
 
@@ -727,20 +687,14 @@ def main():
         groups,
         start=1,
     ):
-        group = latest[
-            latest["peer_group_name"]
-            == group_name
-        ].copy()
+        group = latest[latest["peer_group_name"] == group_name].copy()
 
         path = create_sector_report(
             group_name,
             group,
         )
 
-        size_kb = (
-            path.stat().st_size
-            / 1024
-        )
+        size_kb = path.stat().st_size / 1024
 
         generated.append(path)
 
@@ -754,19 +708,11 @@ def main():
 
     assert len(generated) == 11
 
-    print(
-        f"\nGenerated sector reports: "
-        f"{len(generated)}"
-    )
+    print(f"\nGenerated sector reports: " f"{len(generated)}")
 
-    print(
-        f"Output directory: "
-        f"{OUTPUT_DIR}"
-    )
+    print(f"Output directory: " f"{OUTPUT_DIR}")
 
-    print(
-        "\nDAY 34 SECTOR REPORT GENERATOR: PASS"
-    )
+    print("\nDAY 34 SECTOR REPORT GENERATOR: PASS")
 
 
 if __name__ == "__main__":

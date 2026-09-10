@@ -1,28 +1,22 @@
-﻿import sqlite3
+import sqlite3
+
 import numpy as np
 import pandas as pd
-
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from src.analytics.peer import (
+    METRICS,
+    load_peer_groups,
+)
 from src.screener.engine import (
     DB_PATH,
     PROJECT_ROOT,
     load_screener_dataframe,
 )
 
-from src.analytics.peer import (
-    METRICS,
-    load_peer_groups,
-)
-
-
-OUTPUT_PATH = (
-    PROJECT_ROOT
-    / "output"
-    / "peer_comparison.xlsx"
-)
+OUTPUT_PATH = PROJECT_ROOT / "output" / "peer_comparison.xlsx"
 
 
 DISPLAY_NAMES = {
@@ -42,6 +36,7 @@ DISPLAY_NAMES = {
 def load_peer_percentiles(
     db_path=DB_PATH,
 ):
+    """Load peer percentiles."""
     with sqlite3.connect(db_path) as conn:
         df = pd.read_sql_query(
             """
@@ -67,9 +62,8 @@ def load_peer_percentiles(
 def load_company_names(
     db_path=DB_PATH,
 ):
-    df = load_screener_dataframe(
-        db_path
-    )
+    """Load company names."""
+    df = load_screener_dataframe(db_path)
 
     return (
         df[
@@ -78,9 +72,7 @@ def load_company_names(
                 "company_name",
             ]
         ]
-        .drop_duplicates(
-            subset=["company_id"]
-        )
+        .drop_duplicates(subset=["company_id"])
         .copy()
     )
 
@@ -91,10 +83,8 @@ def build_group_dataframe(
     peers,
     company_names,
 ):
-    members = peers[
-        peers["peer_group_name"]
-        == group_name
-    ].copy()
+    """Build group dataframe."""
+    members = peers[peers["peer_group_name"] == group_name].copy()
 
     members = members.merge(
         company_names,
@@ -102,40 +92,24 @@ def build_group_dataframe(
         how="left",
     )
 
-    peer_data = percentile_df[
-        percentile_df["peer_group_name"]
-        == group_name
-    ].copy()
+    peer_data = percentile_df[percentile_df["peer_group_name"] == group_name].copy()
 
-    raw = (
-        peer_data
-        .pivot_table(
-            index="company_id",
-            columns="metric",
-            values="value",
-            aggfunc="first",
-        )
-        .reset_index()
-    )
+    raw = peer_data.pivot_table(
+        index="company_id",
+        columns="metric",
+        values="value",
+        aggfunc="first",
+    ).reset_index()
 
-    ranks = (
-        peer_data
-        .pivot_table(
-            index="company_id",
-            columns="metric",
-            values="percentile_rank",
-            aggfunc="first",
-        )
-        .reset_index()
-    )
+    ranks = peer_data.pivot_table(
+        index="company_id",
+        columns="metric",
+        values="percentile_rank",
+        aggfunc="first",
+    ).reset_index()
 
     ranks = ranks.rename(
-        columns={
-            metric: (
-                f"{metric}_percentile"
-            )
-            for metric in METRICS
-        }
+        columns={metric: (f"{metric}_percentile") for metric in METRICS}
     )
 
     df = members.merge(
@@ -154,17 +128,10 @@ def build_group_dataframe(
         if metric not in df.columns:
             df[metric] = np.nan
 
-        percentile_col = (
-            f"{metric}_percentile"
-        )
+        percentile_col = f"{metric}_percentile"
 
-        if (
-            percentile_col
-            not in df.columns
-        ):
-            df[
-                percentile_col
-            ] = np.nan
+        if percentile_col not in df.columns:
+            df[percentile_col] = np.nan
 
     columns = [
         "company_id",
@@ -174,19 +141,16 @@ def build_group_dataframe(
 
     for metric in METRICS:
         columns.append(metric)
-        columns.append(
-            f"{metric}_percentile"
-        )
+        columns.append(f"{metric}_percentile")
 
     return df[columns].copy()
 
 
 def add_median_row(df):
+    """Add median row."""
     row = {
         "company_id": "MEDIAN",
-        "company_name": (
-            "Peer Group Median"
-        ),
+        "company_name": ("Peer Group Median"),
         "is_benchmark": 0,
     }
 
@@ -196,13 +160,9 @@ def add_median_row(df):
             errors="coerce",
         ).median()
 
-        percentile_col = (
-            f"{metric}_percentile"
-        )
+        percentile_col = f"{metric}_percentile"
 
-        row[
-            percentile_col
-        ] = pd.to_numeric(
+        row[percentile_col] = pd.to_numeric(
             df[percentile_col],
             errors="coerce",
         ).median()
@@ -217,6 +177,7 @@ def add_median_row(df):
 
 
 def safe_sheet_name(name):
+    """Handle safe sheet name."""
     for char in [
         ":",
         "\\",
@@ -226,38 +187,25 @@ def safe_sheet_name(name):
         "[",
         "]",
     ]:
-        name = name.replace(
-            char,
-            "-"
-        )
+        name = name.replace(char, "-")
 
     return name[:31]
 
 
 def write_workbook():
+    """Write workbook."""
     OUTPUT_PATH.parent.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    percentile_df = (
-        load_peer_percentiles()
-    )
+    percentile_df = load_peer_percentiles()
 
     peers = load_peer_groups()
 
-    company_names = (
-        load_company_names()
-    )
+    company_names = load_company_names()
 
-    groups = sorted(
-        peers[
-            "peer_group_name"
-        ]
-        .dropna()
-        .unique()
-        .tolist()
-    )
+    groups = sorted(peers["peer_group_name"].dropna().unique().tolist())
 
     wb = Workbook()
     wb.remove(wb.active)
@@ -303,11 +251,7 @@ def write_workbook():
 
         df = add_median_row(df)
 
-        ws = wb.create_sheet(
-            safe_sheet_name(
-                group_name
-            )
-        )
+        ws = wb.create_sheet(safe_sheet_name(group_name))
 
         headers = [
             "company_id",
@@ -316,15 +260,11 @@ def write_workbook():
         ]
 
         for metric in METRICS:
-            label = DISPLAY_NAMES[
-                metric
-            ]
+            label = DISPLAY_NAMES[metric]
 
             headers.append(label)
 
-            headers.append(
-                f"{label} Percentile"
-            )
+            headers.append(f"{label} Percentile")
 
         for col_idx, header in enumerate(
             headers,
@@ -336,9 +276,7 @@ def write_workbook():
                 value=header,
             )
 
-            cell.font = Font(
-                bold=True
-            )
+            cell.font = Font(bold=True)
 
             cell.fill = header_fill
 
@@ -370,30 +308,21 @@ def write_workbook():
                     value=value,
                 )
 
-                if (
-                    col_idx >= 4
-                    and isinstance(
-                        value,
-                        (
-                            int,
-                            float,
-                        ),
-                    )
+                if col_idx >= 4 and isinstance(
+                    value,
+                    (
+                        int,
+                        float,
+                    ),
                 ):
-                    cell.number_format = (
-                        "0.00"
-                    )
+                    cell.number_format = "0.00"
 
         median_row = ws.max_row
 
-        for cell in ws[
-            median_row
-        ]:
+        for cell in ws[median_row]:
             cell.fill = median_fill
 
-            cell.font = Font(
-                bold=True
-            )
+            cell.font = Font(bold=True)
 
         for row_idx in range(
             2,
@@ -410,27 +339,14 @@ def write_workbook():
                 True,
                 "1",
             ):
-                for cell in ws[
-                    row_idx
-                ]:
-                    cell.fill = (
-                        benchmark_fill
-                    )
+                for cell in ws[row_idx]:
+                    cell.fill = benchmark_fill
 
-                    cell.font = Font(
-                        bold=True
-                    )
+                    cell.font = Font(bold=True)
 
-        percentile_columns = [
-            5 + i * 2
-            for i in range(
-                len(METRICS)
-            )
-        ]
+        percentile_columns = [5 + i * 2 for i in range(len(METRICS))]
 
-        for col_idx in (
-            percentile_columns
-        ):
+        for col_idx in percentile_columns:
 
             for row_idx in range(
                 2,
@@ -466,16 +382,12 @@ def write_workbook():
                     cell.fill = red_fill
 
                 else:
-                    cell.fill = (
-                        yellow_fill
-                    )
+                    cell.fill = yellow_fill
 
         ws.freeze_panes = "A2"
 
         ws.auto_filter.ref = (
-            f"A1:"
-            f"{get_column_letter(ws.max_column)}"
-            f"{median_row - 1}"
+            f"A1:" f"{get_column_letter(ws.max_column)}" f"{median_row - 1}"
         )
 
         for col_idx in range(
@@ -501,11 +413,7 @@ def write_workbook():
                         len(str(value)),
                     )
 
-            ws.column_dimensions[
-                get_column_letter(
-                    col_idx
-                )
-            ].width = min(
+            ws.column_dimensions[get_column_letter(col_idx)].width = min(
                 max_length + 2,
                 24,
             )
@@ -516,22 +424,17 @@ def write_workbook():
 
 
 def validate_workbook():
+    """Validate workbook."""
     wb = load_workbook(
         OUTPUT_PATH,
         data_only=True,
     )
 
-    assert (
-        len(wb.sheetnames)
-        == 11
-    )
+    assert len(wb.sheetnames) == 11
 
     for ws in wb.worksheets:
 
-        assert (
-            ws.max_column
-            == 23
-        )
+        assert ws.max_column == 23
 
         assert (
             ws.cell(
@@ -545,13 +448,10 @@ def validate_workbook():
 
 
 def main():
+    """Run the module entry point."""
     print("=" * 80)
-    print(
-        "SPRINT 3 - DAY 20"
-    )
-    print(
-        "PEER COMPARISON WORKBOOK"
-    )
+    print("SPRINT 3 - DAY 20")
+    print("PEER COMPARISON WORKBOOK")
     print("=" * 80)
 
     path = write_workbook()
@@ -579,36 +479,21 @@ def main():
     for name in wb.sheetnames:
         ws = wb[name]
 
-        print(
-            f"{name}: "
-            f"{ws.max_row - 2} companies"
-        )
+        print(f"{name}: " f"{ws.max_row - 2} companies")
 
     print()
-    print(
-        "Exactly 11 sheets: PASS"
-    )
+    print("Exactly 11 sheets: PASS")
 
-    print(
-        "20 metric columns: PASS"
-    )
+    print("20 metric columns: PASS")
 
-    print(
-        "Benchmark rows: PASS"
-    )
+    print("Benchmark rows: PASS")
 
-    print(
-        "Median rows: PASS"
-    )
+    print("Median rows: PASS")
 
-    print(
-        "Percentile colors: PASS"
-    )
+    print("Percentile colors: PASS")
 
     print()
-    print(
-        "DAY 20 COMPLETE"
-    )
+    print("DAY 20 COMPLETE")
 
 
 if __name__ == "__main__":

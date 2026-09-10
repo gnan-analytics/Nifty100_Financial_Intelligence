@@ -1,10 +1,8 @@
-﻿"""Tests for screener and sector API endpoints."""
+"""Tests for screener and sector API endpoints."""
 
 
 def test_screener_returns_200(client):
-    response = client.get(
-        "/api/v1/screener"
-    )
+    response = client.get("/api/v1/screener")
 
     assert response.status_code == 200
 
@@ -34,16 +32,11 @@ def test_screener_quality_filter(client):
 
 
 def test_screener_rank_order(client):
-    response = client.get(
-        "/api/v1/screener"
-    )
+    response = client.get("/api/v1/screener")
 
     data = response.json()
 
-    ranks = [
-        row["rank"]
-        for row in data["companies"]
-    ]
+    ranks = [row["rank"] for row in data["companies"]]
 
     assert ranks == list(
         range(
@@ -76,17 +69,13 @@ def test_screener_invalid_max_pe(client):
 
 
 def test_sectors_returns_200(client):
-    response = client.get(
-        "/api/v1/sectors"
-    )
+    response = client.get("/api/v1/sectors")
 
     assert response.status_code == 200
 
 
 def test_sectors_count_matches_source(client):
-    response = client.get(
-        "/api/v1/sectors"
-    )
+    response = client.get("/api/v1/sectors")
 
     data = response.json()
 
@@ -95,41 +84,29 @@ def test_sectors_count_matches_source(client):
 
 
 def test_sector_company_total_is_92(client):
-    response = client.get(
-        "/api/v1/sectors"
-    )
+    response = client.get("/api/v1/sectors")
 
     data = response.json()
 
-    total = sum(
-        row["company_count"]
-        for row in data["sectors"]
-    )
+    total = sum(row["company_count"] for row in data["sectors"])
 
     assert total == 92
 
 
 def test_it_sector_alias(client):
-    response = client.get(
-        "/api/v1/sectors/IT/companies"
-    )
+    response = client.get("/api/v1/sectors/IT/companies")
 
     assert response.status_code == 200
 
     data = response.json()
 
-    assert (
-        data["sector"]
-        == "Information Technology"
-    )
+    assert data["sector"] == "Information Technology"
 
     assert data["count"] == 5
 
 
 def test_financials_sector(client):
-    response = client.get(
-        "/api/v1/sectors/Financials/companies"
-    )
+    response = client.get("/api/v1/sectors/Financials/companies")
 
     assert response.status_code == 200
 
@@ -139,9 +116,6 @@ def test_financials_sector(client):
 
 
 def test_unknown_sector_returns_404(client):
-    response = client.get(
-        "/api/v1/sectors/UNKNOWNSECTOR/companies"
-    )
+    response = client.get("/api/v1/sectors/UNKNOWNSECTOR/companies")
 
     assert response.status_code == 404
-

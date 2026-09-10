@@ -1,15 +1,15 @@
 import pytest
 
 from src.analytics.cagr import (
-    calculate_cagr,
-    calculate_series_cagr,
-    calculate_growth_metrics,
-    NORMAL,
-    DECLINE_TO_LOSS,
-    TURNAROUND,
     BOTH_NEGATIVE,
-    ZERO_BASE,
+    DECLINE_TO_LOSS,
     INSUFFICIENT,
+    NORMAL,
+    TURNAROUND,
+    ZERO_BASE,
+    calculate_cagr,
+    calculate_growth_metrics,
+    calculate_series_cagr,
 )
 
 
@@ -20,9 +20,7 @@ def test_normal_cagr():
         years=2,
     )
 
-    assert result["value"] == pytest.approx(
-        10.0
-    )
+    assert result["value"] == pytest.approx(10.0)
 
     assert result["flag"] == NORMAL
 
@@ -96,9 +94,7 @@ def test_three_year_cagr():
         window_years=3,
     )
 
-    assert result["value"] == pytest.approx(
-        10.0
-    )
+    assert result["value"] == pytest.approx(10.0)
 
     assert result["flag"] == NORMAL
 
@@ -116,9 +112,7 @@ def test_five_year_cagr():
         window_years=5,
     )
 
-    assert result["value"] == pytest.approx(
-        10.0
-    )
+    assert result["value"] == pytest.approx(10.0)
 
     assert result["flag"] == NORMAL
 
@@ -130,9 +124,7 @@ def test_end_value_zero():
         years=5,
     )
 
-    assert result["value"] == pytest.approx(
-        -100.0
-    )
+    assert result["value"] == pytest.approx(-100.0)
 
     assert result["flag"] == NORMAL
 
@@ -165,7 +157,4 @@ def test_growth_metrics_columns():
     assert "eps_cagr_5yr" in result
     assert "eps_cagr_10yr" in result
 
-    assert (
-        result["revenue_cagr_10yr_flag"]
-        == INSUFFICIENT
-    )
+    assert result["revenue_cagr_10yr_flag"] == INSUFFICIENT

@@ -1,4 +1,4 @@
-﻿"""Unit tests for Sprint 1 data-quality validation rules."""
+"""Unit tests for Sprint 1 data-quality validation rules."""
 
 import pandas as pd
 
@@ -91,9 +91,7 @@ def test_dq04_balance_sheet_mismatch():
         }
     )
 
-    failures = validate_balance_sheet(
-        df
-    )
+    failures = validate_balance_sheet(df)
 
     _assert_rule(failures, "DQ-04")
 
@@ -109,9 +107,7 @@ def test_dq05_opm_mismatch():
         }
     )
 
-    failures = validate_opm(
-        df
-    )
+    failures = validate_opm(df)
 
     _assert_rule(failures, "DQ-05")
 
@@ -210,9 +206,7 @@ def test_dq09_net_cash_mismatch():
         }
     )
 
-    failures = validate_net_cash(
-        df
-    )
+    failures = validate_net_cash(df)
 
     _assert_rule(failures, "DQ-09")
 
@@ -226,9 +220,7 @@ def test_dq10_negative_fixed_assets():
         }
     )
 
-    failures = validate_fixed_assets(
-        df
-    )
+    failures = validate_fixed_assets(df)
 
     _assert_rule(failures, "DQ-10")
 
@@ -242,9 +234,7 @@ def test_dq11_invalid_tax_rate():
         }
     )
 
-    failures = validate_tax_rate(
-        df
-    )
+    failures = validate_tax_rate(df)
 
     _assert_rule(failures, "DQ-11")
 
@@ -258,9 +248,7 @@ def test_dq12_excessive_dividend_payout():
         }
     )
 
-    failures = validate_dividend_payout(
-        df
-    )
+    failures = validate_dividend_payout(df)
 
     _assert_rule(failures, "DQ-12")
 
@@ -275,9 +263,7 @@ def test_dq14_eps_sign_mismatch():
         }
     )
 
-    failures = validate_eps_sign(
-        df
-    )
+    failures = validate_eps_sign(df)
 
     _assert_rule(failures, "DQ-14")
 
@@ -292,15 +278,11 @@ def test_dq15_balance_information():
         }
     )
 
-    result = generate_dq15_balance_info(
-        df
-    )
+    result = generate_dq15_balance_info(df)
 
     assert len(result) == 1
     assert result.iloc[0]["rule_id"] == "DQ-15"
-    assert bool(
-        result.iloc[0]["strict_match"]
-    ) is True
+    assert bool(result.iloc[0]["strict_match"]) is True
     assert result.iloc[0]["difference"] == 0
 
 
@@ -344,10 +326,7 @@ def test_dq16_insufficient_history():
     )
 
     assert len(failures) == 3
-    assert all(
-        failure["rule_id"] == "DQ-16"
-        for failure in failures
-    )
+    assert all(failure["rule_id"] == "DQ-16" for failure in failures)
 
 
 def test_clean_rows_produce_no_failures():
@@ -365,38 +344,42 @@ def test_clean_rows_produce_no_failures():
         }
     )
 
-    assert validate_company_year_uniqueness(
-        "profitandloss",
-        pnl,
-    ) == []
+    assert (
+        validate_company_year_uniqueness(
+            "profitandloss",
+            pnl,
+        )
+        == []
+    )
 
-    assert validate_year_format(
-        "profitandloss",
-        pnl,
-    ) == []
+    assert (
+        validate_year_format(
+            "profitandloss",
+            pnl,
+        )
+        == []
+    )
 
-    assert validate_ticker_format(
-        "profitandloss",
-        pnl,
-    ) == []
+    assert (
+        validate_ticker_format(
+            "profitandloss",
+            pnl,
+        )
+        == []
+    )
 
-    assert validate_positive_sales(
-        pnl,
-        bank_tickers=set(),
-    ) == []
+    assert (
+        validate_positive_sales(
+            pnl,
+            bank_tickers=set(),
+        )
+        == []
+    )
 
-    assert validate_opm(
-        pnl
-    ) == []
+    assert validate_opm(pnl) == []
 
-    assert validate_tax_rate(
-        pnl
-    ) == []
+    assert validate_tax_rate(pnl) == []
 
-    assert validate_dividend_payout(
-        pnl
-    ) == []
+    assert validate_dividend_payout(pnl) == []
 
-    assert validate_eps_sign(
-        pnl
-    ) == []
+    assert validate_eps_sign(pnl) == []

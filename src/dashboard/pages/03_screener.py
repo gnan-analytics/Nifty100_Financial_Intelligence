@@ -1,9 +1,8 @@
-﻿import pandas as pd
+import pandas as pd
 import streamlit as st
 
 from src.dashboard.utils.db import get_screener_data
 from src.screener.engine import run_preset
-
 
 st.title("🔎 Nifty 100 Screener")
 
@@ -39,10 +38,7 @@ if st.button("Clear Preset / Use Custom Filters", use_container_width=True):
 active_preset = st.session_state.active_screener_preset
 
 if active_preset:
-    label = next(
-        name for name, key in preset_map.items()
-        if key == active_preset
-    )
+    label = next(name for name, key in preset_map.items() if key == active_preset)
 
     st.info(f"Active preset: {label}")
 
@@ -65,7 +61,9 @@ else:
         roe_min = st.slider("ROE minimum (%)", -100.0, 100.0, -100.0, 1.0)
         de_max = st.slider("Debt / Equity maximum", 0.0, 20.0, 20.0, 0.1)
         fcf_min = st.slider("FCF minimum (₹ Cr)", -50000.0, 50000.0, -50000.0, 500.0)
-        rev_cagr_min = st.slider("Revenue CAGR 5Y minimum (%)", -100.0, 100.0, -100.0, 1.0)
+        rev_cagr_min = st.slider(
+            "Revenue CAGR 5Y minimum (%)", -100.0, 100.0, -100.0, 1.0
+        )
         pat_cagr_min = st.slider("PAT CAGR 5Y minimum (%)", -100.0, 150.0, -100.0, 1.0)
         opm_min = st.slider("OPM minimum (%)", -100.0, 100.0, -100.0, 1.0)
         pe_max = st.slider("P/E maximum", 0.0, 500.0, 500.0, 5.0)
@@ -76,6 +74,7 @@ else:
     result = data.copy()
 
     def apply_min(frame, column, threshold):
+        """Apply min."""
         if column not in frame.columns:
             return frame
 
@@ -83,6 +82,7 @@ else:
         return frame[values.ge(threshold) | values.isna()]
 
     def apply_max(frame, column, threshold):
+        """Apply max."""
         if column not in frame.columns:
             return frame
 
@@ -103,18 +103,10 @@ else:
         de = pd.to_numeric(result["debt_to_equity"], errors="coerce")
 
         is_financial = (
-            result["sector"]
-            .fillna("")
-            .astype(str)
-            .str.lower()
-            .eq("financials")
+            result["sector"].fillna("").astype(str).str.lower().eq("financials")
         )
 
-        result = result[
-            is_financial
-            | de.le(de_max)
-            | de.isna()
-        ]
+        result = result[is_financial | de.le(de_max) | de.isna()]
 
 if result.empty:
     st.warning("No companies match the selected criteria.")
@@ -158,10 +150,7 @@ preferred_columns = [
     "composite_quality_score",
 ]
 
-visible_columns = [
-    col for col in preferred_columns
-    if col in result.columns
-]
+visible_columns = [col for col in preferred_columns if col in result.columns]
 
 display = result[visible_columns].copy()
 
@@ -198,9 +187,7 @@ st.download_button(
     "Download Results as CSV",
     data=result.to_csv(index=False).encode("utf-8"),
     file_name=(
-        f"{active_preset}_screener.csv"
-        if active_preset
-        else "custom_screener.csv"
+        f"{active_preset}_screener.csv" if active_preset else "custom_screener.csv"
     ),
     mime="text/csv",
 )

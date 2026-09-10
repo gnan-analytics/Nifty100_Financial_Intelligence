@@ -1,36 +1,19 @@
-from pathlib import Path
 import sqlite3
+from pathlib import Path
 
 import pandas as pd
-
 
 ROOT = Path(__file__).resolve().parents[2]
 
 DB_PATH = ROOT / "db" / "nifty100.db"
 
-CAPITAL_PATH = (
-    ROOT
-    / "output"
-    / "capital_allocation.csv"
-)
+CAPITAL_PATH = ROOT / "output" / "capital_allocation.csv"
 
-INTEL_PATH = (
-    ROOT
-    / "output"
-    / "cashflow_intelligence.xlsx"
-)
+INTEL_PATH = ROOT / "output" / "cashflow_intelligence.xlsx"
 
-DISTRIBUTION_PATH = (
-    ROOT
-    / "output"
-    / "capital_allocation_distribution.csv"
-)
+DISTRIBUTION_PATH = ROOT / "output" / "capital_allocation_distribution.csv"
 
-CHANGES_PATH = (
-    ROOT
-    / "output"
-    / "pattern_changes.csv"
-)
+CHANGES_PATH = ROOT / "output" / "pattern_changes.csv"
 
 
 EXPECTED_PATTERNS = [
@@ -46,6 +29,7 @@ EXPECTED_PATTERNS = [
 
 
 def prepare_year(df):
+    """Prepare year."""
     x = df.copy()
 
     x["year"] = x["year"].astype(str)
@@ -56,19 +40,16 @@ def prepare_year(df):
         errors="coerce",
     )
 
-    return (
-        x
-        .dropna(subset=["_date"])
-        .sort_values(
-            [
-                "company_id",
-                "_date",
-            ]
-        )
+    return x.dropna(subset=["_date"]).sort_values(
+        [
+            "company_id",
+            "_date",
+        ]
     )
 
 
 def load_company_master():
+    """Load company master."""
     with sqlite3.connect(DB_PATH) as conn:
 
         companies = pd.read_sql_query(
@@ -86,10 +67,7 @@ def load_company_master():
         )
 
     companies["company_id"] = (
-        companies["company_id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
+        companies["company_id"].astype(str).str.strip().str.upper()
     )
 
     return companies
@@ -99,14 +77,14 @@ def build_latest_distribution(
     companies,
     allocation,
 ):
+    """Build latest distribution."""
     latest = (
         prepare_year(allocation)
         .groupby(
             "company_id",
             as_index=False,
         )
-        .tail(1)
-        [
+        .tail(1)[
             [
                 "company_id",
                 "year",
@@ -121,20 +99,11 @@ def build_latest_distribution(
         how="left",
     )
 
-    latest["pattern_label"] = (
-        latest["pattern_label"]
-        .fillna("Data Unavailable")
-    )
+    latest["pattern_label"] = latest["pattern_label"].fillna("Data Unavailable")
 
-    latest["year"] = (
-        latest["year"]
-        .fillna("Data Unavailable")
-    )
+    latest["year"] = latest["year"].fillna("Data Unavailable")
 
-    category_order = (
-        EXPECTED_PATTERNS
-        + ["Data Unavailable"]
-    )
+    category_order = EXPECTED_PATTERNS + ["Data Unavailable"]
 
     counts = (
         latest["pattern_label"]
@@ -145,90 +114,46 @@ def build_latest_distribution(
         )
     )
 
-    distribution = (
-        counts
-        .rename_axis(
-            "pattern_label"
-        )
-        .reset_index(
-            name="company_count"
-        )
-    )
+    distribution = counts.rename_axis("pattern_label").reset_index(name="company_count")
 
     distribution["pct_of_92"] = (
-        distribution[
-            "company_count"
-        ]
-        / len(companies)
-        * 100
+        distribution["company_count"] / len(companies) * 100
     ).round(2)
 
-    distribution = distribution[
-        distribution[
-            "company_count"
-        ] > 0
-    ].reset_index(drop=True)
+    distribution = distribution[distribution["company_count"] > 0].reset_index(
+        drop=True
+    )
 
     return latest, distribution
 
 
 def build_pattern_changes(allocation):
-    x = prepare_year(
-        allocation
-    )
+    """Build pattern changes."""
+    x = prepare_year(allocation)
 
     rows = []
 
-    for company_id, group in x.groupby(
-        "company_id"
-    ):
+    for company_id, group in x.groupby("company_id"):
 
-        group = (
-            group
-            .sort_values("_date")
-            .reset_index(drop=True)
-        )
+        group = group.sort_values("_date").reset_index(drop=True)
 
         previous = None
 
         for _, row in group.iterrows():
 
-            current = row[
-                "pattern_label"
-            ]
+            current = row["pattern_label"]
 
             if previous is not None:
 
-                if (
-                    current
-                    != previous[
-                        "pattern_label"
-                    ]
-                ):
+                if current != previous["pattern_label"]:
 
                     rows.append(
                         {
-                            "company_id": (
-                                company_id
-                            ),
-                            "from_year": (
-                                previous[
-                                    "year"
-                                ]
-                            ),
-                            "to_year": (
-                                row[
-                                    "year"
-                                ]
-                            ),
-                            "from_pattern": (
-                                previous[
-                                    "pattern_label"
-                                ]
-                            ),
-                            "to_pattern": (
-                                current
-                            ),
+                            "company_id": (company_id),
+                            "from_year": (previous["year"]),
+                            "to_year": (row["year"]),
+                            "from_pattern": (previous["pattern_label"]),
+                            "to_pattern": (current),
                         }
                     )
 
@@ -249,16 +174,10 @@ def build_pattern_changes(allocation):
 def validate_intelligence_labels(
     latest,
 ):
-    intel = pd.read_excel(
-        INTEL_PATH
-    )
+    """Validate intelligence labels."""
+    intel = pd.read_excel(INTEL_PATH)
 
-    intel["company_id"] = (
-        intel["company_id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
+    intel["company_id"] = intel["company_id"].astype(str).str.strip().str.upper()
 
     check = intel[
         [
@@ -276,54 +195,29 @@ def validate_intelligence_labels(
         how="left",
     )
 
-    mismatches = check[
-        check[
-            "capital_allocation_label"
-        ]
-        != check[
-            "pattern_label"
-        ]
-    ]
+    mismatches = check[check["capital_allocation_label"] != check["pattern_label"]]
 
     return mismatches
 
 
 def main():
-    companies = (
-        load_company_master()
-    )
+    """Run the module entry point."""
+    companies = load_company_master()
 
-    allocation = pd.read_csv(
-        CAPITAL_PATH
-    )
+    allocation = pd.read_csv(CAPITAL_PATH)
 
     allocation["company_id"] = (
-        allocation[
-            "company_id"
-        ]
-        .astype(str)
-        .str.strip()
-        .str.upper()
+        allocation["company_id"].astype(str).str.strip().str.upper()
     )
 
-    latest, distribution = (
-        build_latest_distribution(
-            companies,
-            allocation,
-        )
+    latest, distribution = build_latest_distribution(
+        companies,
+        allocation,
     )
 
-    changes = (
-        build_pattern_changes(
-            allocation
-        )
-    )
+    changes = build_pattern_changes(allocation)
 
-    mismatches = (
-        validate_intelligence_labels(
-            latest
-        )
-    )
+    mismatches = validate_intelligence_labels(latest)
 
     distribution.to_csv(
         DISTRIBUTION_PATH,
@@ -336,9 +230,7 @@ def main():
     )
 
     print("=" * 90)
-    print(
-        "SPRINT 5 - DAY 32 CAPITAL ALLOCATION INTELLIGENCE"
-    )
+    print("SPRINT 5 - DAY 32 CAPITAL ALLOCATION INTELLIGENCE")
     print("=" * 90)
 
     print(
@@ -348,9 +240,7 @@ def main():
 
     print(
         "Companies with history:",
-        allocation[
-            "company_id"
-        ].nunique(),
+        allocation["company_id"].nunique(),
     )
 
     print(
@@ -358,32 +248,14 @@ def main():
         len(companies),
     )
 
-    missing = sorted(
-        set(
-            companies[
-                "company_id"
-            ]
-        )
-        - set(
-            allocation[
-                "company_id"
-            ]
-        )
-    )
+    missing = sorted(set(companies["company_id"]) - set(allocation["company_id"]))
 
     print(
         "\nCompanies without allocation history:",
         missing,
     )
 
-    observed = sorted(
-        allocation[
-            "pattern_label"
-        ]
-        .dropna()
-        .unique()
-        .tolist()
-    )
+    observed = sorted(allocation["pattern_label"].dropna().unique().tolist())
 
     print(
         "\nObserved historical patterns:",
@@ -391,19 +263,11 @@ def main():
     )
 
     for pattern in observed:
-        print(
-            f"  {pattern}"
-        )
+        print(f"  {pattern}")
 
-    print(
-        "\nLATEST DISTRIBUTION:"
-    )
+    print("\nLATEST DISTRIBUTION:")
 
-    print(
-        distribution.to_string(
-            index=False
-        )
-    )
+    print(distribution.to_string(index=False))
 
     print(
         "\nLatest reporting categories:",
@@ -417,11 +281,7 @@ def main():
 
     print(
         "Companies with >=1 change:",
-        changes[
-            "company_id"
-        ].nunique()
-        if not changes.empty
-        else 0,
+        changes["company_id"].nunique() if not changes.empty else 0,
     )
 
     print(
@@ -430,41 +290,21 @@ def main():
     )
 
     assert len(companies) == 92
-    assert (
-        allocation[
-            "company_id"
-        ].nunique()
-        == 91
-    )
+    assert allocation["company_id"].nunique() == 91
 
     assert missing == ["ATGL"]
 
     assert set(observed) == set(EXPECTED_PATTERNS)
 
-    assert (
-        latest[
-            "pattern_label"
-        ]
-        .eq(
-            "Data Unavailable"
-        )
-        .sum()
-        == 1
-    )
+    assert latest["pattern_label"].eq("Data Unavailable").sum() == 1
 
     assert len(mismatches) == 0
 
-    print(
-        f"\nCreated: {DISTRIBUTION_PATH}"
-    )
+    print(f"\nCreated: {DISTRIBUTION_PATH}")
 
-    print(
-        f"Created: {CHANGES_PATH}"
-    )
+    print(f"Created: {CHANGES_PATH}")
 
-    print(
-        "\nDAY 32 GENERATOR: PASS"
-    )
+    print("\nDAY 32 GENERATOR: PASS")
 
 
 if __name__ == "__main__":

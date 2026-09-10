@@ -1,4 +1,3 @@
-﻿from pathlib import Path
 import sqlite3
 
 import numpy as np
@@ -10,7 +9,6 @@ from src.screener.engine import (
     load_screener_dataframe,
     run_all_presets,
 )
-
 
 OUTPUT_DIR = PROJECT_ROOT / "output"
 OUTPUT_PATH = OUTPUT_DIR / "screener_output.xlsx"
@@ -24,14 +22,11 @@ WEIGHTS = {
     "roe_score": 15,
     "roce_score": 10,
     "npm_score": 10,
-
     "fcf_cagr_score": 15,
     "cfo_pat_score": 10,
     "fcf_positive_score": 5,
-
     "revenue_cagr_score": 10,
     "pat_cagr_score": 10,
-
     "de_score": 10,
     "icr_score": 5,
 }
@@ -41,16 +36,14 @@ WEIGHTS = {
 # FCF CAGR
 # ============================================================
 
+
 def calculate_fcf_cagr(
     start_value,
     end_value,
     years,
 ):
-    if (
-        pd.isna(start_value)
-        or pd.isna(end_value)
-        or years <= 0
-    ):
+    """Calculate fcf cagr."""
+    if pd.isna(start_value) or pd.isna(end_value) or years <= 0:
         return np.nan
 
     # CAGR is not economically meaningful when
@@ -62,17 +55,13 @@ def calculate_fcf_cagr(
     if end_value <= 0:
         return np.nan
 
-    return (
-        (
-            end_value / start_value
-        ) ** (1 / years)
-        - 1
-    ) * 100
+    return ((end_value / start_value) ** (1 / years) - 1) * 100
 
 
 def load_fcf_history(
     db_path=DB_PATH,
 ):
+    """Load fcf history."""
     with sqlite3.connect(db_path) as conn:
         df = pd.read_sql_query(
             """
@@ -99,46 +88,30 @@ def load_fcf_history(
 def calculate_fcf_cagr_5yr(
     db_path=DB_PATH,
 ):
-    history = load_fcf_history(
-        db_path
-    )
+    """Calculate fcf cagr 5yr."""
+    history = load_fcf_history(db_path)
 
     rows = []
 
-    for company_id, group in history.groupby(
-        "company_id"
-    ):
+    for company_id, group in history.groupby("company_id"):
         group = (
-            group[
-                group["period"].notna()
-            ]
-            .sort_values("period")
-            .reset_index(drop=True)
+            group[group["period"].notna()].sort_values("period").reset_index(drop=True)
         )
 
         if group.empty:
             continue
 
         # Prefer latest March/full-year observation.
-        march = group[
-            group["period"].dt.month.eq(3)
-        ]
+        march = group[group["period"].dt.month.eq(3)]
 
         if not march.empty:
             latest = march.iloc[-1]
         else:
             latest = group.iloc[-1]
 
-        target_period = (
-            latest["period"]
-            - pd.DateOffset(years=5)
-        )
+        target_period = latest["period"] - pd.DateOffset(years=5)
 
-        previous = group[
-            group["period"].eq(
-                target_period
-            )
-        ]
+        previous = group[group["period"].eq(target_period)]
 
         if previous.empty:
             cagr = np.nan
@@ -147,9 +120,7 @@ def calculate_fcf_cagr_5yr(
         else:
             previous = previous.iloc[-1]
 
-            start_fcf = previous[
-                "free_cash_flow_cr"
-            ]
+            start_fcf = previous["free_cash_flow_cr"]
 
             start_year = previous["year"]
 
@@ -166,9 +137,7 @@ def calculate_fcf_cagr_5yr(
                 "fcf_cagr_start_year": start_year,
                 "fcf_cagr_end_year": latest["year"],
                 "fcf_cagr_start_value": start_fcf,
-                "fcf_cagr_end_value": latest[
-                    "free_cash_flow_cr"
-                ],
+                "fcf_cagr_end_value": latest["free_cash_flow_cr"],
             }
         )
 
@@ -179,10 +148,12 @@ def calculate_fcf_cagr_5yr(
 # P10 / P90 WINSORIZATION
 # ============================================================
 
+
 def winsorized_score(
     series,
     inverse=False,
 ):
+    """Handle winsorized score."""
     numeric = pd.to_numeric(
         series,
         errors="coerce",
@@ -207,9 +178,7 @@ def winsorized_score(
         p90,
         equal_nan=False,
     ):
-        result.loc[
-            numeric.notna()
-        ] = 50.0
+        result.loc[numeric.notna()] = 50.0
 
         return result
 
@@ -218,20 +187,12 @@ def winsorized_score(
         upper=p90,
     )
 
-    scaled = (
-        (capped - p10)
-        / (p90 - p10)
-        * 100
-    )
+    scaled = (capped - p10) / (p90 - p10) * 100
 
     if inverse:
         scaled = 100 - scaled
 
-    result.loc[
-        numeric.notna()
-    ] = scaled.loc[
-        numeric.notna()
-    ]
+    result.loc[numeric.notna()] = scaled.loc[numeric.notna()]
 
     return result.clip(
         lower=0,
@@ -243,114 +204,56 @@ def winsorized_score(
 # COMPOSITE SCORE
 # ============================================================
 
+
 def calculate_composite_score(
     df,
 ):
+    """Calculate composite score."""
     result = df.copy()
 
-    result["roe_score"] = (
-        winsorized_score(
-            result[
-                "return_on_equity_pct"
-            ]
-        )
-    )
+    result["roe_score"] = winsorized_score(result["return_on_equity_pct"])
 
-    result["roce_score"] = (
-        winsorized_score(
-            result[
-                "return_on_capital_employed_pct"
-            ]
-        )
-    )
+    result["roce_score"] = winsorized_score(result["return_on_capital_employed_pct"])
 
-    result["npm_score"] = (
-        winsorized_score(
-            result[
-                "net_profit_margin_pct"
-            ]
-        )
-    )
+    result["npm_score"] = winsorized_score(result["net_profit_margin_pct"])
 
-    result["fcf_cagr_score"] = (
-        winsorized_score(
-            result[
-                "fcf_cagr_5yr"
-            ]
-        )
-    )
+    result["fcf_cagr_score"] = winsorized_score(result["fcf_cagr_5yr"])
 
-    result["cfo_pat_score"] = (
-        winsorized_score(
-            result[
-                "cfo_pat_ratio"
-            ]
-        )
-    )
+    result["cfo_pat_score"] = winsorized_score(result["cfo_pat_ratio"])
 
     result["fcf_positive_score"] = np.where(
-        result[
-            "free_cash_flow_cr"
-        ].isna(),
+        result["free_cash_flow_cr"].isna(),
         np.nan,
         np.where(
-            result[
-                "free_cash_flow_cr"
-            ] > 0,
+            result["free_cash_flow_cr"] > 0,
             100.0,
             0.0,
         ),
     )
 
-    result["revenue_cagr_score"] = (
-        winsorized_score(
-            result[
-                "revenue_cagr_5yr"
-            ]
-        )
+    result["revenue_cagr_score"] = winsorized_score(result["revenue_cagr_5yr"])
+
+    result["pat_cagr_score"] = winsorized_score(result["pat_cagr_5yr"])
+
+    result["de_score"] = winsorized_score(
+        result["debt_to_equity"],
+        inverse=True,
     )
 
-    result["pat_cagr_score"] = (
-        winsorized_score(
-            result[
-                "pat_cagr_5yr"
-            ]
-        )
-    )
-
-    result["de_score"] = (
-        winsorized_score(
-            result[
-                "debt_to_equity"
-            ],
-            inverse=True,
-        )
-    )
-
-    icr = result[
-        "interest_coverage_effective"
-    ].replace(
+    icr = result["interest_coverage_effective"].replace(
         [np.inf, -np.inf],
         np.nan,
     )
 
-    result["icr_score"] = (
-        winsorized_score(icr)
-    )
+    result["icr_score"] = winsorized_score(icr)
 
     # Debt-free companies get maximum ICR score.
     result.loc[
-        np.isposinf(
-            result[
-                "interest_coverage_effective"
-            ]
-        ),
+        np.isposinf(result["interest_coverage_effective"]),
         "icr_score",
     ] = 100.0
 
-    score_columns = list(
-        WEIGHTS.keys()
-    )
+    list(WEIGHTS.keys())
 
     weighted_sum = pd.Series(
         0.0,
@@ -363,13 +266,9 @@ def calculate_composite_score(
     )
 
     for column, weight in WEIGHTS.items():
-        valid = result[
-            column
-        ].notna()
+        valid = result[column].notna()
 
-        weighted_sum.loc[
-            valid
-        ] += (
+        weighted_sum.loc[valid] += (
             result.loc[
                 valid,
                 column,
@@ -377,27 +276,16 @@ def calculate_composite_score(
             * weight
         )
 
-        available_weight.loc[
-            valid
-        ] += weight
+        available_weight.loc[valid] += weight
 
-    result[
-        "composite_quality_score"
-    ] = np.where(
+    result["composite_quality_score"] = np.where(
         available_weight > 0,
-        weighted_sum
-        / available_weight,
+        weighted_sum / available_weight,
         np.nan,
     )
 
-    result[
-        "composite_quality_score"
-    ] = (
-        result[
-            "composite_quality_score"
-        ]
-        .clip(0, 100)
-        .round(2)
+    result["composite_quality_score"] = (
+        result["composite_quality_score"].clip(0, 100).round(2)
     )
 
     return result
@@ -407,40 +295,31 @@ def calculate_composite_score(
 # SECTOR RELATIVE SCORE
 # ============================================================
 
+
 def add_sector_relative_score(
     df,
 ):
+    """Add sector relative score."""
     result = df.copy()
 
-    result[
-        "sector_relative_composite_score"
-    ] = np.nan
+    result["sector_relative_composite_score"] = np.nan
 
     for sector, group in result.groupby(
         "broad_sector",
         dropna=False,
     ):
-        scores = group[
-            "composite_quality_score"
-        ]
+        scores = group["composite_quality_score"]
 
-        sector_score = (
-            winsorized_score(scores)
-        )
+        sector_score = winsorized_score(scores)
 
         result.loc[
             group.index,
             "sector_relative_composite_score",
         ] = sector_score
 
-    result[
+    result["sector_relative_composite_score"] = result[
         "sector_relative_composite_score"
-    ] = (
-        result[
-            "sector_relative_composite_score"
-        ]
-        .round(2)
-    )
+    ].round(2)
 
     return result
 
@@ -449,10 +328,12 @@ def add_sector_relative_score(
 # UPDATE DATABASE
 # ============================================================
 
+
 def update_database_scores(
     scored_df,
     db_path=DB_PATH,
 ):
+    """Update database scores."""
     with sqlite3.connect(db_path) as conn:
 
         for _, row in scored_df.iterrows():
@@ -465,16 +346,10 @@ def update_database_scores(
                   AND year = ?
                 """,
                 (
-                    None
-                    if pd.isna(
-                        row[
-                            "composite_quality_score"
-                        ]
-                    )
-                    else float(
-                        row[
-                            "composite_quality_score"
-                        ]
+                    (
+                        None
+                        if pd.isna(row["composite_quality_score"])
+                        else float(row["composite_quality_score"])
                     ),
                     row["company_id"],
                     row["year"],
@@ -493,33 +368,25 @@ EXPORT_COLUMNS = [
     "company_name",
     "broad_sector",
     "sub_sector",
-
     "return_on_equity_pct",
     "return_on_capital_employed_pct",
     "net_profit_margin_pct",
-
     "debt_to_equity",
     "interest_coverage",
-
     "free_cash_flow_cr",
     "fcf_cagr_5yr",
     "cfo_pat_ratio",
-
     "revenue_cagr_5yr",
     "pat_cagr_5yr",
     "eps_cagr_5yr",
-
     "operating_profit_margin_pct",
     "asset_turnover",
-
     "pe_ratio",
     "pb_ratio",
     "dividend_yield_pct",
-
     "market_cap_crore",
     "sales",
     "net_profit",
-
     "composite_quality_score",
     "sector_relative_composite_score",
 ]
@@ -529,6 +396,7 @@ def export_screener_workbook(
     scored_df,
     output_path=OUTPUT_PATH,
 ):
+    """Export screener workbook."""
     from openpyxl import Workbook
     from openpyxl.styles import (
         Alignment,
@@ -582,9 +450,7 @@ def export_screener_workbook(
         fgColor="D9EAF7",
     )
 
-    header_font = Font(
-        bold=True
-    )
+    header_font = Font(bold=True)
 
     preset_threshold_columns = {
         "quality_compounder": {
@@ -605,7 +471,6 @@ def export_screener_workbook(
                 10,
             ),
         },
-
         "value_pick": {
             "pe_ratio": (
                 "lt",
@@ -624,7 +489,6 @@ def export_screener_workbook(
                 1,
             ),
         },
-
         "growth_accelerator": {
             "pat_cagr_5yr": (
                 "gt",
@@ -639,7 +503,6 @@ def export_screener_workbook(
                 2,
             ),
         },
-
         "dividend_champion": {
             "dividend_yield_pct": (
                 "gt",
@@ -654,7 +517,6 @@ def export_screener_workbook(
                 0,
             ),
         },
-
         "debt_free_blue_chip": {
             "debt_to_equity": (
                 "eq",
@@ -669,7 +531,6 @@ def export_screener_workbook(
                 5000,
             ),
         },
-
         "turnaround_watch": {
             "revenue_cagr_3yr": (
                 "gt",
@@ -682,9 +543,7 @@ def export_screener_workbook(
         },
     }
 
-    for preset_name, preset_df in (
-        preset_results.items()
-    ):
+    for preset_name, preset_df in preset_results.items():
         df = preset_df.copy()
 
         # Remove old score so merge does
@@ -695,9 +554,7 @@ def export_screener_workbook(
             "fcf_cagr_5yr",
         ]:
             if col in df.columns:
-                df = df.drop(
-                    columns=[col]
-                )
+                df = df.drop(columns=[col])
 
         df = df.merge(
             score_lookup,
@@ -713,47 +570,23 @@ def export_screener_workbook(
 
         extra_cols = []
 
-        if (
-            "dividend_payout_ratio_pct"
-            in df.columns
-        ):
-            extra_cols.append(
-                "dividend_payout_ratio_pct"
-            )
+        if "dividend_payout_ratio_pct" in df.columns:
+            extra_cols.append("dividend_payout_ratio_pct")
 
-        if (
-            "revenue_cagr_3yr"
-            in df.columns
-        ):
-            extra_cols.append(
-                "revenue_cagr_3yr"
-            )
+        if "revenue_cagr_3yr" in df.columns:
+            extra_cols.append("revenue_cagr_3yr")
 
         columns = []
 
-        for col in (
-            EXPORT_COLUMNS
-            + extra_cols
-        ):
-            if (
-                col in df.columns
-                and col not in columns
-            ):
+        for col in EXPORT_COLUMNS + extra_cols:
+            if col in df.columns and col not in columns:
                 columns.append(col)
 
-        export_df = df[
-            columns
-        ].copy()
+        export_df = df[columns].copy()
 
-        sheet_name = (
-            preset_name
-            .replace("_", " ")
-            .title()
-        )[:31]
+        sheet_name = (preset_name.replace("_", " ").title())[:31]
 
-        ws = wb.create_sheet(
-            title=sheet_name
-        )
+        ws = wb.create_sheet(title=sheet_name)
 
         for col_idx, column in enumerate(
             export_df.columns,
@@ -767,9 +600,7 @@ def export_screener_workbook(
 
             cell.font = header_font
             cell.fill = header_fill
-            cell.alignment = Alignment(
-                horizontal="center"
-            )
+            cell.alignment = Alignment(horizontal="center")
 
         for row_idx, row in enumerate(
             export_df.itertuples(
@@ -791,11 +622,9 @@ def export_screener_workbook(
                     value=value,
                 )
 
-        thresholds = (
-            preset_threshold_columns.get(
-                preset_name,
-                {},
-            )
+        thresholds = preset_threshold_columns.get(
+            preset_name,
+            {},
         )
 
         for column, (
@@ -806,12 +635,7 @@ def export_screener_workbook(
             if column not in export_df.columns:
                 continue
 
-            col_idx = (
-                list(
-                    export_df.columns
-                ).index(column)
-                + 1
-            )
+            col_idx = list(export_df.columns).index(column) + 1
 
             for row_idx in range(
                 2,
@@ -831,24 +655,12 @@ def export_screener_workbook(
                 # D/E is intentionally
                 # skipped for Financials
                 # in max-threshold presets.
-                if (
-                    column
-                    == "debt_to_equity"
-                    and preset_name
-                    in {
-                        "quality_compounder",
-                        "value_pick",
-                        "growth_accelerator",
-                    }
-                ):
-                    sector_col = (
-                        list(
-                            export_df.columns
-                        ).index(
-                            "broad_sector"
-                        )
-                        + 1
-                    )
+                if column == "debt_to_equity" and preset_name in {
+                    "quality_compounder",
+                    "value_pick",
+                    "growth_accelerator",
+                }:
+                    sector_col = list(export_df.columns).index("broad_sector") + 1
 
                     sector = ws.cell(
                         row=row_idx,
@@ -860,14 +672,10 @@ def export_screener_workbook(
                         continue
 
                 if comparison == "gt":
-                    passed = (
-                        value > threshold
-                    )
+                    passed = value > threshold
 
                 elif comparison == "lt":
-                    passed = (
-                        value < threshold
-                    )
+                    passed = value < threshold
 
                 elif comparison == "eq":
                     passed = np.isclose(
@@ -879,16 +687,10 @@ def export_screener_workbook(
                 else:
                     passed = False
 
-                cell.fill = (
-                    green_fill
-                    if passed
-                    else red_fill
-                )
+                cell.fill = green_fill if passed else red_fill
 
         ws.freeze_panes = "A2"
-        ws.auto_filter.ref = (
-            ws.dimensions
-        )
+        ws.auto_filter.ref = ws.dimensions
 
         for idx, column in enumerate(
             export_df.columns,
@@ -901,7 +703,8 @@ def export_screener_workbook(
                 min(
                     ws.max_row,
                     100,
-                ) + 1,
+                )
+                + 1,
             ):
                 value = ws.cell(
                     row=row_idx,
@@ -914,9 +717,7 @@ def export_screener_workbook(
                         len(str(value)),
                     )
 
-            ws.column_dimensions[
-                get_column_letter(idx)
-            ].width = min(
+            ws.column_dimensions[get_column_letter(idx)].width = min(
                 max_length + 2,
                 24,
             )
@@ -930,7 +731,9 @@ def export_screener_workbook(
 # MAIN
 # ============================================================
 
+
 def main():
+    """Run the module entry point."""
     print("=" * 80)
     print("SPRINT 3 — DAY 17")
     print("COMPOSITE QUALITY SCORE")
@@ -946,42 +749,30 @@ def main():
         how="left",
     )
 
-    df = calculate_composite_score(
-        df
-    )
+    df = calculate_composite_score(df)
 
-    df = add_sector_relative_score(
-        df
-    )
+    df = add_sector_relative_score(df)
 
     update_database_scores(df)
 
-    output_path = (
-        export_screener_workbook(df)
-    )
+    output_path = export_screener_workbook(df)
 
     print()
     print("Companies scored:", len(df))
 
     print(
         "Composite non-null:",
-        df[
-            "composite_quality_score"
-        ].notna().sum(),
+        df["composite_quality_score"].notna().sum(),
     )
 
     print(
         "Sector score non-null:",
-        df[
-            "sector_relative_composite_score"
-        ].notna().sum(),
+        df["sector_relative_composite_score"].notna().sum(),
     )
 
     print(
         "FCF CAGR 5Y non-null:",
-        df[
-            "fcf_cagr_5yr"
-        ].notna().sum(),
+        df["fcf_cagr_5yr"].notna().sum(),
     )
 
     print()
@@ -1009,11 +800,7 @@ def main():
         .head(10)
     )
 
-    print(
-        top.to_string(
-            index=False
-        )
-    )
+    print(top.to_string(index=False))
 
     print()
     print(

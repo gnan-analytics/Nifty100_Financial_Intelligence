@@ -1,9 +1,9 @@
 import pandas as pd
 
-
 # =========================================================
 # FREE CASH FLOW
 # =========================================================
+
 
 def calculate_free_cash_flow(
     operating_activity,
@@ -25,26 +25,20 @@ def calculate_free_cash_flow(
         return None
 
     try:
-        operating_activity = float(
-            operating_activity
-        )
+        operating_activity = float(operating_activity)
 
-        investing_activity = float(
-            investing_activity
-        )
+        investing_activity = float(investing_activity)
 
     except (TypeError, ValueError):
         return None
 
-    return (
-        operating_activity
-        + investing_activity
-    )
+    return operating_activity + investing_activity
 
 
 # =========================================================
 # CFO / PAT RATIO
 # =========================================================
+
 
 def calculate_cfo_pat_ratio(
     operating_activity,
@@ -63,13 +57,9 @@ def calculate_cfo_pat_ratio(
         return None
 
     try:
-        operating_activity = float(
-            operating_activity
-        )
+        operating_activity = float(operating_activity)
 
-        net_profit = float(
-            net_profit
-        )
+        net_profit = float(net_profit)
 
     except (TypeError, ValueError):
         return None
@@ -77,15 +67,13 @@ def calculate_cfo_pat_ratio(
     if net_profit == 0:
         return None
 
-    return (
-        operating_activity
-        / net_profit
-    )
+    return operating_activity / net_profit
 
 
 # =========================================================
 # CFO QUALITY SCORE
 # =========================================================
+
 
 def calculate_cfo_quality_score(
     cfo_pat_ratios,
@@ -122,9 +110,7 @@ def calculate_cfo_quality_score(
             continue
 
         try:
-            valid_values.append(
-                float(value)
-            )
+            valid_values.append(float(value))
 
         except (TypeError, ValueError):
             continue
@@ -135,10 +121,7 @@ def calculate_cfo_quality_score(
             "label": None,
         }
 
-    average_ratio = (
-        sum(valid_values)
-        / len(valid_values)
-    )
+    average_ratio = sum(valid_values) / len(valid_values)
 
     if average_ratio > 1.0:
         label = "High Quality"
@@ -158,6 +141,7 @@ def calculate_cfo_quality_score(
 # =========================================================
 # CAPEX INTENSITY
 # =========================================================
+
 
 def calculate_capex_intensity(
     investing_activity,
@@ -188,13 +172,9 @@ def calculate_capex_intensity(
         }
 
     try:
-        investing_activity = float(
-            investing_activity
-        )
+        investing_activity = float(investing_activity)
 
-        sales = float(
-            sales
-        )
+        sales = float(sales)
 
     except (TypeError, ValueError):
         return {
@@ -208,11 +188,7 @@ def calculate_capex_intensity(
             "label": None,
         }
 
-    value = (
-        abs(investing_activity)
-        / sales
-        * 100
-    )
+    value = abs(investing_activity) / sales * 100
 
     if value < 3:
         label = "Asset Light"
@@ -232,6 +208,7 @@ def calculate_capex_intensity(
 # =========================================================
 # FCF CONVERSION
 # =========================================================
+
 
 def calculate_fcf_conversion(
     free_cash_flow,
@@ -253,13 +230,9 @@ def calculate_fcf_conversion(
         return None
 
     try:
-        free_cash_flow = float(
-            free_cash_flow
-        )
+        free_cash_flow = float(free_cash_flow)
 
-        operating_profit = float(
-            operating_profit
-        )
+        operating_profit = float(operating_profit)
 
     except (TypeError, ValueError):
         return None
@@ -267,16 +240,13 @@ def calculate_fcf_conversion(
     if operating_profit == 0:
         return None
 
-    return (
-        free_cash_flow
-        / operating_profit
-        * 100
-    )
+    return free_cash_flow / operating_profit * 100
 
 
 # =========================================================
 # SIGN HELPER
 # =========================================================
+
 
 def get_sign(value):
     """
@@ -311,6 +281,7 @@ def get_sign(value):
 # CAPITAL ALLOCATION CLASSIFIER
 # =========================================================
 
+
 def classify_capital_allocation(
     cfo,
     cfi,
@@ -335,17 +306,11 @@ def classify_capital_allocation(
     Zero-sign cases fall back to Mixed.
     """
 
-    cfo_sign = get_sign(
-        cfo
-    )
+    cfo_sign = get_sign(cfo)
 
-    cfi_sign = get_sign(
-        cfi
-    )
+    cfi_sign = get_sign(cfi)
 
-    cff_sign = get_sign(
-        cff
-    )
+    cff_sign = get_sign(cff)
 
     pattern = (
         cfo_sign,
@@ -360,12 +325,8 @@ def classify_capital_allocation(
     ):
         if (
             cfo_pat_ratio is not None
-            and not pd.isna(
-                cfo_pat_ratio
-            )
-            and float(
-                cfo_pat_ratio
-            ) > 1.0
+            and not pd.isna(cfo_pat_ratio)
+            and float(cfo_pat_ratio) > 1.0
         ):
             label = "Shareholder Returns"
 
@@ -429,6 +390,7 @@ def classify_capital_allocation(
 # FULL CASH FLOW KPI CALCULATION
 # =========================================================
 
+
 def calculate_cashflow_kpis(
     cashflow_row,
     pnl_row,
@@ -438,89 +400,41 @@ def calculate_cashflow_kpis(
     for one company-year.
     """
 
-    free_cash_flow = (
-        calculate_free_cash_flow(
-            cashflow_row.get(
-                "operating_activity"
-            ),
-            cashflow_row.get(
-                "investing_activity"
-            ),
-        )
+    free_cash_flow = calculate_free_cash_flow(
+        cashflow_row.get("operating_activity"),
+        cashflow_row.get("investing_activity"),
     )
 
-    cfo_pat_ratio = (
-        calculate_cfo_pat_ratio(
-            cashflow_row.get(
-                "operating_activity"
-            ),
-            pnl_row.get(
-                "net_profit"
-            ),
-        )
+    cfo_pat_ratio = calculate_cfo_pat_ratio(
+        cashflow_row.get("operating_activity"),
+        pnl_row.get("net_profit"),
     )
 
-    capex = (
-        calculate_capex_intensity(
-            cashflow_row.get(
-                "investing_activity"
-            ),
-            pnl_row.get(
-                "sales"
-            ),
-        )
+    capex = calculate_capex_intensity(
+        cashflow_row.get("investing_activity"),
+        pnl_row.get("sales"),
     )
 
-    fcf_conversion = (
-        calculate_fcf_conversion(
-            free_cash_flow,
-            pnl_row.get(
-                "operating_profit"
-            ),
-        )
+    fcf_conversion = calculate_fcf_conversion(
+        free_cash_flow,
+        pnl_row.get("operating_profit"),
     )
 
-    allocation = (
-        classify_capital_allocation(
-            cfo=cashflow_row.get(
-                "operating_activity"
-            ),
-            cfi=cashflow_row.get(
-                "investing_activity"
-            ),
-            cff=cashflow_row.get(
-                "financing_activity"
-            ),
-            cfo_pat_ratio=cfo_pat_ratio,
-        )
+    allocation = classify_capital_allocation(
+        cfo=cashflow_row.get("operating_activity"),
+        cfi=cashflow_row.get("investing_activity"),
+        cff=cashflow_row.get("financing_activity"),
+        cfo_pat_ratio=cfo_pat_ratio,
     )
 
     return {
-        "free_cash_flow_cr": (
-            free_cash_flow
-        ),
-        "cfo_pat_ratio": (
-            cfo_pat_ratio
-        ),
-        "capex_intensity_pct": (
-            capex["value"]
-        ),
-        "capex_intensity_label": (
-            capex["label"]
-        ),
-        "fcf_conversion_pct": (
-            fcf_conversion
-        ),
-        "cfo_sign": (
-            allocation["cfo_sign"]
-        ),
-        "cfi_sign": (
-            allocation["cfi_sign"]
-        ),
-        "cff_sign": (
-            allocation["cff_sign"]
-        ),
-        "pattern_label": (
-            allocation["pattern_label"]
-        ),
+        "free_cash_flow_cr": (free_cash_flow),
+        "cfo_pat_ratio": (cfo_pat_ratio),
+        "capex_intensity_pct": (capex["value"]),
+        "capex_intensity_label": (capex["label"]),
+        "fcf_conversion_pct": (fcf_conversion),
+        "cfo_sign": (allocation["cfo_sign"]),
+        "cfi_sign": (allocation["cfi_sign"]),
+        "cff_sign": (allocation["cff_sign"]),
+        "pattern_label": (allocation["pattern_label"]),
     }

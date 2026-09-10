@@ -1,4 +1,3 @@
-﻿from pathlib import Path
 import sqlite3
 
 import numpy as np
@@ -6,10 +5,8 @@ import pandas as pd
 
 from src.screener.engine import (
     DB_PATH,
-    PROJECT_ROOT,
     load_screener_dataframe,
 )
-
 
 # ============================================================
 # CONFIG
@@ -63,9 +60,11 @@ METRICS = {
 # PEER GROUP LOAD
 # ============================================================
 
+
 def load_peer_groups(
     db_path=DB_PATH,
 ):
+    """Load peer groups."""
     with sqlite3.connect(db_path) as conn:
         df = pd.read_sql_query(
             """
@@ -89,6 +88,7 @@ def load_peer_groups(
 # ============================================================
 # SQL PERCENT_RANK IMPLEMENTATION
 # ============================================================
+
 
 def percent_rank_sql(
     series,
@@ -133,15 +133,9 @@ def percent_rank_sql(
         ascending=ascending,
     )
 
-    percentiles = (
-        (ranks - 1)
-        / (n - 1)
-        * 100
-    )
+    percentiles = (ranks - 1) / (n - 1) * 100
 
-    result.loc[
-        valid.index
-    ] = percentiles
+    result.loc[valid.index] = percentiles
 
     return result.round(2)
 
@@ -150,12 +144,12 @@ def percent_rank_sql(
 # PREPARE LATEST METRICS
 # ============================================================
 
+
 def load_latest_peer_metrics(
     db_path=DB_PATH,
 ):
-    df = load_screener_dataframe(
-        db_path
-    )
+    """Load latest peer metrics."""
+    df = load_screener_dataframe(db_path)
 
     columns = [
         "company_id",
@@ -175,31 +169,23 @@ def load_latest_peer_metrics(
         "composite_quality_score",
     ]
 
-    columns = [
-        col
-        for col in columns
-        if col in df.columns
-    ]
+    columns = [col for col in columns if col in df.columns]
 
-    return df[
-        columns
-    ].copy()
+    return df[columns].copy()
 
 
 # ============================================================
 # PEER PERCENTILES
 # ============================================================
 
+
 def calculate_peer_percentiles(
     db_path=DB_PATH,
 ):
-    peers = load_peer_groups(
-        db_path
-    )
+    """Calculate peer percentiles."""
+    peers = load_peer_groups(db_path)
 
-    metrics_df = load_latest_peer_metrics(
-        db_path
-    )
+    metrics_df = load_latest_peer_metrics(db_path)
 
     peer_data = peers.merge(
         metrics_df,
@@ -209,22 +195,14 @@ def calculate_peer_percentiles(
 
     rows = []
 
-    for peer_group_name, group in (
-        peer_data.groupby(
-            "peer_group_name"
-        )
-    ):
+    for peer_group_name, group in peer_data.groupby("peer_group_name"):
         group = group.copy()
 
-        for metric_name, config in (
-            METRICS.items()
-        ):
+        for metric_name, config in METRICS.items():
             column = config["column"]
             inverse = config["inverse"]
 
-            values = group[
-                column
-            ].copy()
+            values = group[column].copy()
 
             # Debt-free companies should receive
             # maximum ICR percentile.
@@ -255,11 +233,7 @@ def calculate_peer_percentiles(
                 if pd.isna(value):
                     percentile = np.nan
                 else:
-                    percentile = (
-                        percentiles.loc[
-                            index
-                        ]
-                    )
+                    percentile = percentiles.loc[index]
 
                 rows.append(
                     {
@@ -267,23 +241,11 @@ def calculate_peer_percentiles(
                             index,
                             "company_id",
                         ],
-                        "peer_group_name": (
-                            peer_group_name
-                        ),
+                        "peer_group_name": (peer_group_name),
                         "metric": metric_name,
-                        "value": (
-                            None
-                            if pd.isna(value)
-                            else float(value)
-                        ),
+                        "value": (None if pd.isna(value) else float(value)),
                         "percentile_rank": (
-                            None
-                            if pd.isna(
-                                percentile
-                            )
-                            else float(
-                                percentile
-                            )
+                            None if pd.isna(percentile) else float(percentile)
                         ),
                         "year": group.loc[
                             index,
@@ -299,11 +261,12 @@ def calculate_peer_percentiles(
 # DATABASE TABLE
 # ============================================================
 
+
 def create_peer_percentiles_table(
     conn,
 ):
-    conn.execute(
-        """
+    """Create peer percentiles table."""
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS peer_percentiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             company_id TEXT NOT NULL,
@@ -319,40 +282,32 @@ def create_peer_percentiles_table(
                 year
             )
         )
-        """
-    )
+        """)
 
-    conn.execute(
-        """
+    conn.execute("""
         CREATE INDEX IF NOT EXISTS
         idx_peer_percentiles_company
         ON peer_percentiles(company_id)
-        """
-    )
+        """)
 
-    conn.execute(
-        """
+    conn.execute("""
         CREATE INDEX IF NOT EXISTS
         idx_peer_percentiles_group
         ON peer_percentiles(peer_group_name)
-        """
-    )
+        """)
 
 
 def populate_peer_percentiles(
     df,
     db_path=DB_PATH,
 ):
+    """Populate peer percentiles."""
     with sqlite3.connect(db_path) as conn:
-        create_peer_percentiles_table(
-            conn
-        )
+        create_peer_percentiles_table(conn)
 
-        conn.execute(
-            """
+        conn.execute("""
             DELETE FROM peer_percentiles
-            """
-        )
+            """)
 
         records = []
 
@@ -390,77 +345,40 @@ def populate_peer_percentiles(
 # VALIDATION
 # ============================================================
 
+
 def validate_peer_percentiles(
     df,
     db_path=DB_PATH,
 ):
-    peers = load_peer_groups(
-        db_path
-    )
+    """Validate peer percentiles."""
+    peers = load_peer_groups(db_path)
 
-    expected_groups = (
-        peers[
-            "peer_group_name"
+    expected_groups = peers["peer_group_name"].dropna().nunique()
+
+    actual_groups = df["peer_group_name"].dropna().nunique()
+
+    expected_rows = len(peers) * len(METRICS)
+
+    duplicate_count = df.duplicated(
+        subset=[
+            "company_id",
+            "peer_group_name",
+            "metric",
         ]
-        .dropna()
-        .nunique()
-    )
-
-    actual_groups = (
-        df[
-            "peer_group_name"
-        ]
-        .dropna()
-        .nunique()
-    )
-
-    expected_rows = (
-        len(peers)
-        * len(METRICS)
-    )
-
-    duplicate_count = (
-        df.duplicated(
-            subset=[
-                "company_id",
-                "peer_group_name",
-                "metric",
-            ]
-        )
-        .sum()
-    )
+    ).sum()
 
     invalid_percentiles = df[
         df["percentile_rank"].notna()
-        & (
-            (df["percentile_rank"] < 0)
-            | (
-                df[
-                    "percentile_rank"
-                ] > 100
-            )
-        )
+        & ((df["percentile_rank"] < 0) | (df["percentile_rank"] > 100))
     ]
 
     return {
-        "expected_groups": (
-            expected_groups
-        ),
-        "actual_groups": (
-            actual_groups
-        ),
-        "expected_rows": (
-            expected_rows
-        ),
+        "expected_groups": (expected_groups),
+        "actual_groups": (actual_groups),
+        "expected_rows": (expected_rows),
         "actual_rows": len(df),
-        "duplicates": int(
-            duplicate_count
-        ),
-        "invalid_percentiles": (
-            len(
-                invalid_percentiles
-            )
-        ),
+        "duplicates": int(duplicate_count),
+        "invalid_percentiles": (len(invalid_percentiles)),
     }
 
 
@@ -468,19 +386,18 @@ def validate_peer_percentiles(
 # PREVIEW
 # ============================================================
 
+
 def preview_group(
     df,
     group_name,
 ):
+    """Preview group."""
     print()
     print("=" * 90)
     print(group_name)
     print("=" * 90)
 
-    subset = df[
-        df["peer_group_name"]
-        == group_name
-    ]
+    subset = df[df["peer_group_name"] == group_name]
 
     pivot = subset.pivot_table(
         index="company_id",
@@ -489,16 +406,16 @@ def preview_group(
         aggfunc="first",
     )
 
-    print(
-        pivot.round(2).to_string()
-    )
+    print(pivot.round(2).to_string())
 
 
 # ============================================================
 # MAIN
 # ============================================================
 
+
 def main():
+    """Run the module entry point."""
     print("=" * 90)
     print("SPRINT 3 — DAY 18")
     print("PEER PERCENTILE ENGINE")
@@ -508,51 +425,37 @@ def main():
 
     populate_peer_percentiles(df)
 
-    validation = (
-        validate_peer_percentiles(df)
-    )
+    validation = validate_peer_percentiles(df)
 
     print()
     print(
         "Peer groups:",
-        validation[
-            "actual_groups"
-        ],
+        validation["actual_groups"],
     )
 
     print(
         "Expected groups:",
-        validation[
-            "expected_groups"
-        ],
+        validation["expected_groups"],
     )
 
     print(
         "Rows:",
-        validation[
-            "actual_rows"
-        ],
+        validation["actual_rows"],
     )
 
     print(
         "Expected rows:",
-        validation[
-            "expected_rows"
-        ],
+        validation["expected_rows"],
     )
 
     print(
         "Duplicates:",
-        validation[
-            "duplicates"
-        ],
+        validation["duplicates"],
     )
 
     print(
         "Invalid percentiles:",
-        validation[
-            "invalid_percentiles"
-        ],
+        validation["invalid_percentiles"],
     )
 
     print()
@@ -563,9 +466,7 @@ def main():
 
     print(
         "Metrics:",
-        ", ".join(
-            METRICS.keys()
-        ),
+        ", ".join(METRICS.keys()),
     )
 
     preview_group(

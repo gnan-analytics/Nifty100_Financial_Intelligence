@@ -1,4 +1,4 @@
-﻿import pandas as pd
+import pandas as pd
 import plotly.express as px
 import streamlit as st
 
@@ -6,32 +6,19 @@ from src.dashboard.utils.db import (
     get_sector_dashboard,
 )
 
-
 st.title("🧩 Sector Analysis")
 
-st.caption(
-    "Compare companies and sector-level fundamentals"
-)
+st.caption("Compare companies and sector-level fundamentals")
 
 
 df = get_sector_dashboard()
 
 
-sectors = sorted(
-    df[
-        "broad_sector"
-    ]
-    .dropna()
-    .astype(str)
-    .unique()
-    .tolist()
-)
+sectors = sorted(df["broad_sector"].dropna().astype(str).unique().tolist())
 
 
 if not sectors:
-    st.warning(
-        "Sector data unavailable."
-    )
+    st.warning("Sector data unavailable.")
     st.stop()
 
 
@@ -41,12 +28,7 @@ selected_sector = st.selectbox(
 )
 
 
-sector_df = df[
-    df[
-        "broad_sector"
-    ]
-    == selected_sector
-].copy()
+sector_df = df[df["broad_sector"] == selected_sector].copy()
 
 
 for column in [
@@ -61,9 +43,7 @@ for column in [
         )
 
 
-st.subheader(
-    f"{selected_sector} — Company Map"
-)
+st.subheader(f"{selected_sector} — Company Map")
 
 
 bubble = sector_df.dropna(
@@ -76,13 +56,7 @@ bubble = sector_df.dropna(
 
 
 if not bubble.empty:
-    bubble[
-        "bubble_size"
-    ] = bubble[
-        "market_cap_crore"
-    ].clip(
-        lower=1
-    )
+    bubble["bubble_size"] = bubble["market_cap_crore"].clip(lower=1)
 
     fig = px.scatter(
         bubble,
@@ -94,17 +68,14 @@ if not bubble.empty:
         hover_data={
             "company_id": True,
             "sales": ":,.0f",
-            "return_on_equity_pct":
-                ":.2f",
+            "return_on_equity_pct": ":.2f",
             "market_cap_crore": ":,.0f",
             "bubble_size": False,
         },
         labels={
             "sales": "Revenue (₹ Cr)",
-            "return_on_equity_pct":
-                "ROE (%)",
-            "sub_sector":
-                "Sub-sector",
+            "return_on_equity_pct": "ROE (%)",
+            "sub_sector": "Sub-sector",
         },
         size_max=65,
     )
@@ -124,37 +95,25 @@ if not bubble.empty:
         use_container_width=True,
     )
 else:
-    st.info(
-        "Insufficient data for bubble chart."
-    )
+    st.info("Insufficient data for bubble chart.")
 
 
 # ------------------------------------------------------------
 # Sector Median KPI Chart
 # ------------------------------------------------------------
 
-st.subheader(
-    "Sector Median KPIs"
-)
+st.subheader("Sector Median KPIs")
 
 
 median_metrics = {
-    "ROE %":
-        "return_on_equity_pct",
-    "ROCE %":
-        "return_on_capital_employed_pct",
-    "Net Profit Margin %":
-        "net_profit_margin_pct",
-    "Debt / Equity":
-        "debt_to_equity",
-    "Revenue CAGR 5Y %":
-        "revenue_cagr_5yr",
-    "PAT CAGR 5Y %":
-        "pat_cagr_5yr",
-    "P/E":
-        "pe_ratio",
-    "P/B":
-        "pb_ratio",
+    "ROE %": "return_on_equity_pct",
+    "ROCE %": "return_on_capital_employed_pct",
+    "Net Profit Margin %": "net_profit_margin_pct",
+    "Debt / Equity": "debt_to_equity",
+    "Revenue CAGR 5Y %": "revenue_cagr_5yr",
+    "PAT CAGR 5Y %": "pat_cagr_5yr",
+    "P/E": "pe_ratio",
+    "P/B": "pb_ratio",
 }
 
 
@@ -181,9 +140,7 @@ for label, column in median_metrics.items():
     )
 
 
-median_df = pd.DataFrame(
-    rows
-)
+median_df = pd.DataFrame(rows)
 
 
 if not median_df.empty:
@@ -211,9 +168,7 @@ if not median_df.empty:
         use_container_width=True,
     )
 else:
-    st.info(
-        "Sector median data unavailable."
-    )
+    st.info("Sector median data unavailable.")
 
 
 st.dataframe(

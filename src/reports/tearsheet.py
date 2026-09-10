@@ -1,4 +1,4 @@
-﻿from io import BytesIO
+from io import BytesIO
 from pathlib import Path
 import sqlite3
 import sys
@@ -50,6 +50,7 @@ WHITE = colors.white
 
 
 def safe_float(value):
+    """Convert a value to float safely."""
     if value is None or pd.isna(value):
         return None
     try:
@@ -59,6 +60,7 @@ def safe_float(value):
 
 
 def annual_rows(df):
+    """Return annual financial rows."""
     if df.empty:
         return df.copy()
 
@@ -82,6 +84,7 @@ def annual_rows(df):
 
 
 def latest_annual(df):
+    """Return the latest annual financial row."""
     x = annual_rows(df)
 
     if x.empty:
@@ -91,6 +94,7 @@ def latest_annual(df):
 
 
 def fmt_num(value, decimals=1, suffix=""):
+    """Format num."""
     value = safe_float(value)
 
     if value is None:
@@ -100,6 +104,7 @@ def fmt_num(value, decimals=1, suffix=""):
 
 
 def fmt_cr(value):
+    """Format cr."""
     value = safe_float(value)
 
     if value is None:
@@ -109,28 +114,15 @@ def fmt_cr(value):
 
 
 def load_data():
+    """Load data."""
     with sqlite3.connect(DB_PATH) as conn:
-        companies = pd.read_sql_query(
-            "SELECT * FROM companies", conn
-        )
-        sectors = pd.read_sql_query(
-            "SELECT * FROM sectors", conn
-        )
-        ratios = pd.read_sql_query(
-            "SELECT * FROM financial_ratios", conn
-        )
-        pnl = pd.read_sql_query(
-            "SELECT * FROM profitandloss", conn
-        )
-        balance = pd.read_sql_query(
-            "SELECT * FROM balancesheet", conn
-        )
-        cashflow = pd.read_sql_query(
-            "SELECT * FROM cashflow", conn
-        )
-        market = pd.read_sql_query(
-            "SELECT * FROM market_cap", conn
-        )
+        companies = pd.read_sql_query("SELECT * FROM companies", conn)
+        sectors = pd.read_sql_query("SELECT * FROM sectors", conn)
+        ratios = pd.read_sql_query("SELECT * FROM financial_ratios", conn)
+        pnl = pd.read_sql_query("SELECT * FROM profitandloss", conn)
+        balance = pd.read_sql_query("SELECT * FROM balancesheet", conn)
+        cashflow = pd.read_sql_query("SELECT * FROM cashflow", conn)
+        market = pd.read_sql_query("SELECT * FROM market_cap", conn)
 
     pros_cons = pd.read_csv(PROS_CONS_PATH)
     cashflow_intel = pd.read_excel(CASHFLOW_INTEL_PATH)
@@ -148,19 +140,9 @@ def load_data():
 
     for df in frames:
         if "company_id" in df.columns:
-            df["company_id"] = (
-                df["company_id"]
-                .astype(str)
-                .str.strip()
-                .str.upper()
-            )
+            df["company_id"] = df["company_id"].astype(str).str.strip().str.upper()
 
-    companies["id"] = (
-        companies["id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
+    companies["id"] = companies["id"].astype(str).str.strip().str.upper()
 
     return {
         "companies": companies,
@@ -183,6 +165,7 @@ def fig_to_image(
     width=170 * mm,
     height=58 * mm,
 ):
+    """Handle fig to image."""
     buffer = BytesIO()
 
     fig.savefig(
@@ -208,11 +191,10 @@ def fig_to_image(
 
 
 def revenue_profit_chart(pnl):
+    """Handle revenue profit chart."""
     x = annual_rows(pnl).tail(10)
 
-    fig, ax = plt.subplots(
-        figsize=(8.5, 3.0)
-    )
+    fig, ax = plt.subplots(figsize=(8.5, 3.0))
 
     if x.empty:
         ax.text(
@@ -227,12 +209,7 @@ def revenue_profit_chart(pnl):
 
         return fig_to_image(fig)
 
-    years = (
-        x["year"]
-        .astype(str)
-        .str[:4]
-        .tolist()
-    )
+    years = x["year"].astype(str).str[:4].tolist()
 
     revenue = pd.to_numeric(
         x["sales"],
@@ -288,11 +265,10 @@ def revenue_profit_chart(pnl):
 
 
 def roe_roce_chart(ratios):
+    """Handle roe roce chart."""
     x = annual_rows(ratios).tail(10)
 
-    fig, ax1 = plt.subplots(
-        figsize=(8.5, 3.0)
-    )
+    fig, ax1 = plt.subplots(figsize=(8.5, 3.0))
 
     if x.empty:
         ax1.text(
@@ -307,12 +283,7 @@ def roe_roce_chart(ratios):
 
         return fig_to_image(fig)
 
-    years = (
-        x["year"]
-        .astype(str)
-        .str[:4]
-        .tolist()
-    )
+    years = x["year"].astype(str).str[:4].tolist()
 
     roe = pd.to_numeric(
         x["return_on_equity_pct"],
@@ -375,11 +346,10 @@ def roe_roce_chart(ratios):
 
 
 def balance_sheet_chart(balance):
+    """Handle balance sheet chart."""
     x = annual_rows(balance).tail(5)
 
-    fig, ax = plt.subplots(
-        figsize=(8.5, 2.8)
-    )
+    fig, ax = plt.subplots(figsize=(8.5, 2.8))
 
     if x.empty:
         ax.text(
@@ -397,12 +367,7 @@ def balance_sheet_chart(balance):
             height=52 * mm,
         )
 
-    years = (
-        x["year"]
-        .astype(str)
-        .str[:4]
-        .tolist()
-    )
+    years = x["year"].astype(str).str[:4].tolist()
 
     equity_capital = pd.to_numeric(
         x["equity_capital"],
@@ -468,11 +433,10 @@ def balance_sheet_chart(balance):
 
 
 def cashflow_waterfall(cashflow):
+    """Handle cashflow waterfall."""
     row = latest_annual(cashflow)
 
-    fig, ax = plt.subplots(
-        figsize=(8.5, 2.5)
-    )
+    fig, ax = plt.subplots(figsize=(8.5, 2.5))
 
     if row is None:
         ax.text(
@@ -490,21 +454,13 @@ def cashflow_waterfall(cashflow):
             height=45 * mm,
         )
 
-    cfo = safe_float(
-        row.get("operating_activity")
-    ) or 0
+    cfo = safe_float(row.get("operating_activity")) or 0
 
-    cfi = safe_float(
-        row.get("investing_activity")
-    ) or 0
+    cfi = safe_float(row.get("investing_activity")) or 0
 
-    cff = safe_float(
-        row.get("financing_activity")
-    ) or 0
+    cff = safe_float(row.get("financing_activity")) or 0
 
-    total = safe_float(
-        row.get("net_cash_flow")
-    )
+    total = safe_float(row.get("net_cash_flow"))
 
     if total is None:
         total = cfo + cfi + cff
@@ -556,6 +512,7 @@ print("DAY 33 CHART HELPERS LOADED")
 
 
 def build_styles():
+    """Build styles."""
     styles = getSampleStyleSheet()
 
     return {
@@ -569,7 +526,6 @@ def build_styles():
             spaceBefore=3,
             spaceAfter=4,
         ),
-
         "small": ParagraphStyle(
             "Small",
             parent=styles["BodyText"],
@@ -577,7 +533,6 @@ def build_styles():
             leading=9,
             textColor=DARK,
         ),
-
         "signal": ParagraphStyle(
             "Signal",
             parent=styles["BodyText"],
@@ -586,7 +541,6 @@ def build_styles():
             textColor=DARK,
             wordWrap="CJK",
         ),
-
         "center_small": ParagraphStyle(
             "CenterSmall",
             parent=styles["BodyText"],
@@ -595,7 +549,6 @@ def build_styles():
             alignment=TA_CENTER,
             wordWrap="CJK",
         ),
-
         "tile_value": ParagraphStyle(
             "TileValue",
             parent=styles["BodyText"],
@@ -606,7 +559,6 @@ def build_styles():
             textColor=NAVY,
             wordWrap="CJK",
         ),
-
         "tile_label": ParagraphStyle(
             "TileLabel",
             parent=styles["BodyText"],
@@ -625,6 +577,7 @@ def header_table(
     sector,
     report_year,
 ):
+    """Handle header table."""
     title_style = ParagraphStyle(
         "HeaderTitle",
         fontName="Helvetica",
@@ -644,8 +597,7 @@ def header_table(
     )
 
     title = Paragraph(
-        f"<b>{company_name}</b><br/>"
-        f"<font size='9'>{ticker} | {sector}</font>",
+        f"<b>{company_name}</b><br/>" f"<font size='9'>{ticker} | {sector}</font>",
         title_style,
     )
 
@@ -705,6 +657,7 @@ def kpi_tile(
     value,
     styles,
 ):
+    """Handle kpi tile."""
     return Table(
         [
             [
@@ -731,41 +684,18 @@ def kpi_table(
     market_row,
     styles,
 ):
-    market_cap = (
-        market_row.get("market_cap_crore")
-        if market_row is not None
-        else None
-    )
+    """Handle kpi table."""
+    market_cap = market_row.get("market_cap_crore") if market_row is not None else None
 
-    pe = (
-        market_row.get("pe_ratio")
-        if market_row is not None
-        else None
-    )
+    pe = market_row.get("pe_ratio") if market_row is not None else None
 
-    roe = (
-        ratio_row.get("return_on_equity_pct")
-        if ratio_row is not None
-        else None
-    )
+    roe = ratio_row.get("return_on_equity_pct") if ratio_row is not None else None
 
-    debt_equity = (
-        ratio_row.get("debt_to_equity")
-        if ratio_row is not None
-        else None
-    )
+    debt_equity = ratio_row.get("debt_to_equity") if ratio_row is not None else None
 
-    revenue_cagr = (
-        ratio_row.get("revenue_cagr_5yr")
-        if ratio_row is not None
-        else None
-    )
+    revenue_cagr = ratio_row.get("revenue_cagr_5yr") if ratio_row is not None else None
 
-    pat_cagr = (
-        ratio_row.get("pat_cagr_5yr")
-        if ratio_row is not None
-        else None
-    )
+    pat_cagr = ratio_row.get("pat_cagr_5yr") if ratio_row is not None else None
 
     tiles = [
         kpi_tile(
@@ -816,7 +746,8 @@ def kpi_table(
         [tiles],
         colWidths=[
             29 * mm,
-        ] * 6,
+        ]
+        * 6,
     )
 
     table.setStyle(
@@ -873,6 +804,7 @@ def signal_table(
     styles,
     positive=True,
 ):
+    """Handle signal table."""
     if positive:
         bg = GREEN_BG
         text_color = GREEN_TEXT
@@ -907,20 +839,12 @@ def signal_table(
         )
     else:
         for _, row in signals.head(4).iterrows():
-            confidence = safe_float(
-                row.get("confidence_pct")
-            )
+            confidence = safe_float(row.get("confidence_pct"))
 
-            confidence_text = (
-                f"{confidence:.0f}%"
-                if confidence is not None
-                else "N/A"
-            )
+            confidence_text = f"{confidence:.0f}%" if confidence is not None else "N/A"
 
             text = (
-                f"<b>{row['rule_id']}</b> "
-                f"({confidence_text}) - "
-                f"{row['text']}"
+                f"<b>{row['rule_id']}</b> " f"({confidence_text}) - " f"{row['text']}"
             )
 
             rows.append(
@@ -996,6 +920,7 @@ def allocation_badge(
     intel_row,
     styles,
 ):
+    """Handle allocation badge."""
     if intel_row is None:
         label = "Data Unavailable"
         quality = "Data Unavailable"
@@ -1139,6 +1064,7 @@ def allocation_badge(
 
 
 def footer(canvas, doc):
+    """Handle footer."""
     canvas.saveState()
 
     canvas.setFont(
@@ -1146,9 +1072,7 @@ def footer(canvas, doc):
         7,
     )
 
-    canvas.setFillColor(
-        MID_GREY
-    )
+    canvas.setFillColor(MID_GREY)
 
     canvas.drawString(
         18 * mm,
@@ -1172,84 +1096,47 @@ def create_tearsheet(
     ticker,
     data,
 ):
+    """Create tearsheet."""
     ticker = ticker.upper()
 
-    company_rows = data["companies"][
-        data["companies"]["id"] == ticker
-    ]
+    company_rows = data["companies"][data["companies"]["id"] == ticker]
 
     if company_rows.empty:
-        raise ValueError(
-            f"Unknown company: {ticker}"
-        )
+        raise ValueError(f"Unknown company: {ticker}")
 
     company = company_rows.iloc[0]
 
-    sector_rows = data["sectors"][
-        data["sectors"]["company_id"] == ticker
-    ]
+    sector_rows = data["sectors"][data["sectors"]["company_id"] == ticker]
 
     if not sector_rows.empty and "broad_sector" in sector_rows.columns:
         sector = sector_rows.iloc[0]["broad_sector"]
     else:
         sector = "Unknown"
 
-    ratio_df = data["ratios"][
-        data["ratios"]["company_id"] == ticker
-    ]
+    ratio_df = data["ratios"][data["ratios"]["company_id"] == ticker]
 
-    pnl_df = data["pnl"][
-        data["pnl"]["company_id"] == ticker
-    ]
+    pnl_df = data["pnl"][data["pnl"]["company_id"] == ticker]
 
-    balance_df = data["balance"][
-        data["balance"]["company_id"] == ticker
-    ]
+    balance_df = data["balance"][data["balance"]["company_id"] == ticker]
 
-    cashflow_df = data["cashflow"][
-        data["cashflow"]["company_id"] == ticker
-    ]
+    cashflow_df = data["cashflow"][data["cashflow"]["company_id"] == ticker]
 
-    market_df = data["market"][
-        data["market"]["company_id"] == ticker
-    ]
+    market_df = data["market"][data["market"]["company_id"] == ticker]
 
-    ratio_row = latest_annual(
-        ratio_df
-    )
+    ratio_row = latest_annual(ratio_df)
 
-    market_row = latest_annual(
-        market_df
-    )
+    market_row = latest_annual(market_df)
 
-    report_year = (
-        ratio_row["year"]
-        if ratio_row is not None
-        else "N/A"
-    )
+    report_year = ratio_row["year"] if ratio_row is not None else "N/A"
 
     pros = data["pros_cons"][
-        (
-            data["pros_cons"]["company_id"]
-            == ticker
-        )
-        &
-        (
-            data["pros_cons"]["type"]
-            == "pro"
-        )
+        (data["pros_cons"]["company_id"] == ticker)
+        & (data["pros_cons"]["type"] == "pro")
     ].copy()
 
     cons = data["pros_cons"][
-        (
-            data["pros_cons"]["company_id"]
-            == ticker
-        )
-        &
-        (
-            data["pros_cons"]["type"]
-            == "con"
-        )
+        (data["pros_cons"]["company_id"] == ticker)
+        & (data["pros_cons"]["type"] == "con")
     ].copy()
 
     if not pros.empty:
@@ -1264,26 +1151,16 @@ def create_tearsheet(
             ascending=False,
         )
 
-    intel_rows = data["cashflow_intel"][
-        data["cashflow_intel"]["company_id"]
-        == ticker
-    ]
+    intel_rows = data["cashflow_intel"][data["cashflow_intel"]["company_id"] == ticker]
 
-    intel_row = (
-        intel_rows.iloc[0]
-        if not intel_rows.empty
-        else None
-    )
+    intel_row = intel_rows.iloc[0] if not intel_rows.empty else None
 
     OUTPUT_DIR.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    output_path = (
-        OUTPUT_DIR
-        / f"{ticker}_tearsheet.pdf"
-    )
+    output_path = OUTPUT_DIR / f"{ticker}_tearsheet.pdf"
 
     styles = build_styles()
 
@@ -1340,11 +1217,7 @@ def create_tearsheet(
         )
     )
 
-    story.append(
-        revenue_profit_chart(
-            pnl_df
-        )
-    )
+    story.append(revenue_profit_chart(pnl_df))
 
     story.append(
         Spacer(
@@ -1360,17 +1233,11 @@ def create_tearsheet(
         )
     )
 
-    story.append(
-        roe_roce_chart(
-            ratio_df
-        )
-    )
+    story.append(roe_roce_chart(ratio_df))
 
     # PAGE 2
 
-    story.append(
-        PageBreak()
-    )
+    story.append(PageBreak())
 
     story.append(
         header_table(
@@ -1395,11 +1262,7 @@ def create_tearsheet(
         )
     )
 
-    story.append(
-        balance_sheet_chart(
-            balance_df
-        )
-    )
+    story.append(balance_sheet_chart(balance_df))
 
     story.append(
         Spacer(
@@ -1415,11 +1278,7 @@ def create_tearsheet(
         )
     )
 
-    story.append(
-        cashflow_waterfall(
-            cashflow_df
-        )
-    )
+    story.append(cashflow_waterfall(cashflow_df))
 
     story.append(
         Spacer(
@@ -1506,11 +1365,7 @@ def create_tearsheet(
         )
     )
 
-    story.append(
-        KeepTogether(
-            signals
-        )
-    )
+    story.append(KeepTogether(signals))
 
     doc.build(
         story,
@@ -1522,28 +1377,18 @@ def create_tearsheet(
 
 
 def main():
+    """Run the module entry point."""
     data = load_data()
 
-    tickers = (
-        [
-            item.strip().upper()
-            for item in sys.argv[1:]
-            if item.strip()
-        ]
-        or TEST_TICKERS
-    )
+    tickers = [
+        item.strip().upper() for item in sys.argv[1:] if item.strip()
+    ] or TEST_TICKERS
 
-    print(
-        "=" * 90
-    )
+    print("=" * 90)
 
-    print(
-        "SPRINT 5 - DAY 33 TEARSHEET PROTOTYPE"
-    )
+    print("SPRINT 5 - DAY 33 TEARSHEET PROTOTYPE")
 
-    print(
-        "=" * 90
-    )
+    print("=" * 90)
 
     generated = []
 
@@ -1554,10 +1399,7 @@ def main():
                 data,
             )
 
-            size_kb = (
-                path.stat().st_size
-                / 1024
-            )
+            size_kb = path.stat().st_size / 1024
 
             generated.append(
                 (
@@ -1567,28 +1409,17 @@ def main():
                 )
             )
 
-            print(
-                f"[PASS] {ticker}: "
-                f"{size_kb:.1f} KB"
-            )
+            print(f"[PASS] {ticker}: " f"{size_kb:.1f} KB")
 
         except Exception as exc:
-            print(
-                f"[FAIL] {ticker}: {exc}"
-            )
+            print(f"[FAIL] {ticker}: {exc}")
             raise
 
-    print(
-        f"\nGenerated: {len(generated)}"
-    )
+    print(f"\nGenerated: {len(generated)}")
 
-    print(
-        f"Output directory: {OUTPUT_DIR}"
-    )
+    print(f"Output directory: {OUTPUT_DIR}")
 
-    print(
-        "\nDAY 33 PDF GENERATOR: PASS"
-    )
+    print("\nDAY 33 PDF GENERATOR: PASS")
 
 
 if __name__ == "__main__":

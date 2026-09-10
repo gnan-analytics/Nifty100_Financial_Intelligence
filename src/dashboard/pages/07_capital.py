@@ -1,4 +1,4 @@
-﻿import pandas as pd
+import pandas as pd
 import plotly.express as px
 import streamlit as st
 
@@ -6,7 +6,6 @@ from src.dashboard.utils.db import (
     get_capital_allocation,
     get_companies,
 )
-
 
 st.title("💰 Capital Allocation Map")
 
@@ -25,9 +24,7 @@ companies = get_companies()
 
 
 if companies.empty:
-    st.warning(
-        "Company universe unavailable."
-    )
+    st.warning("Company universe unavailable.")
     st.stop()
 
 
@@ -41,18 +38,11 @@ required_columns = [
 ]
 
 
-missing = [
-    col
-    for col in required_columns
-    if col not in capital.columns
-]
+missing = [col for col in required_columns if col not in capital.columns]
 
 
 if missing:
-    st.error(
-        "Missing required columns: "
-        + ", ".join(missing)
-    )
+    st.error("Missing required columns: " + ", ".join(missing))
     st.stop()
 
 
@@ -63,9 +53,7 @@ if missing:
 capital = capital.copy()
 
 
-capital[
-    "year_date"
-] = pd.to_datetime(
+capital["year_date"] = pd.to_datetime(
     capital["year"],
     format="%Y-%m",
     errors="coerce",
@@ -85,12 +73,7 @@ capital = capital.sort_values(
 # ============================================================
 
 latest_available = (
-    capital
-    .dropna(
-        subset=[
-            "year_date"
-        ]
-    )
+    capital.dropna(subset=["year_date"])
     .groupby(
         "company_id",
         as_index=False,
@@ -129,22 +112,10 @@ latest = universe.merge(
 )
 
 
-latest[
-    "pattern_label"
-] = latest[
-    "pattern_label"
-].fillna(
-    "Data Unavailable"
-)
+latest["pattern_label"] = latest["pattern_label"].fillna("Data Unavailable")
 
 
-latest[
-    "year"
-] = latest[
-    "year"
-].fillna(
-    "N/A"
-)
+latest["year"] = latest["year"].fillna("N/A")
 
 
 for column in [
@@ -152,50 +123,27 @@ for column in [
     "cfi_sign",
     "cff_sign",
 ]:
-    latest[column] = (
-        latest[column]
-        .fillna("N/A")
-    )
+    latest[column] = latest[column].fillna("N/A")
 
 
-latest[
-    "Value"
-] = 1
+latest["Value"] = 1
 
 
 # ============================================================
 # COVERAGE
 # ============================================================
 
-classified_count = (
-    latest[
-        "pattern_label"
-    ]
-    .ne(
-        "Data Unavailable"
-    )
-    .sum()
-)
+classified_count = latest["pattern_label"].ne("Data Unavailable").sum()
 
 
-unavailable_count = (
-    latest[
-        "pattern_label"
-    ]
-    .eq(
-        "Data Unavailable"
-    )
-    .sum()
-)
+unavailable_count = latest["pattern_label"].eq("Data Unavailable").sum()
 
 
 # ============================================================
 # SUMMARY KPIs
 # ============================================================
 
-k1, k2, k3, k4 = st.columns(
-    4
-)
+k1, k2, k3, k4 = st.columns(4)
 
 
 k1.metric(
@@ -219,10 +167,7 @@ k3.metric(
 k4.metric(
     "Allocation Patterns",
     latest.loc[
-        latest[
-            "pattern_label"
-        ]
-        != "Data Unavailable",
+        latest["pattern_label"] != "Data Unavailable",
         "pattern_label",
     ].nunique(),
 )
@@ -231,10 +176,7 @@ k4.metric(
 if unavailable_count:
     unavailable_tickers = (
         latest.loc[
-            latest[
-                "pattern_label"
-            ]
-            == "Data Unavailable",
+            latest["pattern_label"] == "Data Unavailable",
             "company_id",
         ]
         .astype(str)
@@ -243,9 +185,7 @@ if unavailable_count:
 
     st.info(
         "Capital-allocation source data is unavailable for: "
-        + ", ".join(
-            unavailable_tickers
-        )
+        + ", ".join(unavailable_tickers)
         + ". No pattern has been inferred."
     )
 
@@ -257,22 +197,14 @@ st.divider()
 # PATTERN DISTRIBUTION
 # ============================================================
 
-st.subheader(
-    "Capital Allocation Distribution"
-)
+st.subheader("Capital Allocation Distribution")
 
 
 pattern_counts = (
-    latest[
-        "pattern_label"
-    ]
+    latest["pattern_label"]
     .value_counts()
-    .rename_axis(
-        "Pattern"
-    )
-    .reset_index(
-        name="Companies"
-    )
+    .rename_axis("Pattern")
+    .reset_index(name="Companies")
 )
 
 
@@ -286,9 +218,7 @@ bar = px.bar(
 
 bar.update_layout(
     height=430,
-    xaxis_title=(
-        "Capital Allocation Pattern"
-    ),
+    xaxis_title=("Capital Allocation Pattern"),
     yaxis_title="Companies",
     margin=dict(
         l=20,
@@ -309,9 +239,7 @@ st.plotly_chart(
 # TREEMAP — ALL 92 COMPANIES
 # ============================================================
 
-st.subheader(
-    "Capital Allocation Map"
-)
+st.subheader("Capital Allocation Map")
 
 
 fig = px.treemap(
@@ -353,19 +281,10 @@ st.plotly_chart(
 # PATTERN EXPLORER
 # ============================================================
 
-st.subheader(
-    "Explore Allocation Pattern"
-)
+st.subheader("Explore Allocation Pattern")
 
 
-patterns = sorted(
-    latest[
-        "pattern_label"
-    ]
-    .dropna()
-    .unique()
-    .tolist()
-)
+patterns = sorted(latest["pattern_label"].dropna().unique().tolist())
 
 
 selected_pattern = st.selectbox(
@@ -374,12 +293,7 @@ selected_pattern = st.selectbox(
 )
 
 
-selected = latest[
-    latest[
-        "pattern_label"
-    ]
-    == selected_pattern
-].copy()
+selected = latest[latest["pattern_label"] == selected_pattern].copy()
 
 
 st.metric(
@@ -403,20 +317,13 @@ display = selected[
 
 display = display.rename(
     columns={
-        "company_id":
-            "Ticker",
-        "company_name":
-            "Company",
-        "year":
-            "Period",
-        "cfo_sign":
-            "CFO",
-        "cfi_sign":
-            "CFI",
-        "cff_sign":
-            "CFF",
-        "pattern_label":
-            "Pattern",
+        "company_id": "Ticker",
+        "company_name": "Company",
+        "year": "Period",
+        "cfo_sign": "CFO",
+        "cfi_sign": "CFI",
+        "cff_sign": "CFF",
+        "pattern_label": "Pattern",
     }
 )
 
@@ -434,9 +341,7 @@ st.dataframe(
 
 st.divider()
 
-st.subheader(
-    "Company Allocation History"
-)
+st.subheader("Company Allocation History")
 
 
 company_options = latest[
@@ -447,52 +352,29 @@ company_options = latest[
 ].copy()
 
 
-company_options = (
-    company_options
-    .sort_values(
-        "company_name"
-    )
-)
+company_options = company_options.sort_values("company_name")
 
 
-company_options[
-    "label"
-] = (
-    company_options[
-        "company_id"
-    ].astype(str)
+company_options["label"] = (
+    company_options["company_id"].astype(str)
     + " — "
-    + company_options[
-        "company_name"
-    ].astype(str)
+    + company_options["company_name"].astype(str)
 )
 
 
-selected_company_label = (
-    st.selectbox(
-        "Company history",
-        company_options[
-            "label"
-        ].tolist(),
-    )
+selected_company_label = st.selectbox(
+    "Company history",
+    company_options["label"].tolist(),
 )
 
 
-selected_ticker = (
-    selected_company_label
-    .split(
-        " — ",
-        1,
-    )[0]
-)
+selected_ticker = selected_company_label.split(
+    " — ",
+    1,
+)[0]
 
 
-history = capital[
-    capital[
-        "company_id"
-    ]
-    == selected_ticker
-].copy()
+history = capital[capital["company_id"] == selected_ticker].copy()
 
 
 history = history.sort_values(
@@ -502,10 +384,7 @@ history = history.sort_values(
 
 
 if history.empty:
-    st.warning(
-        f"No capital-allocation history "
-        f"is available for {selected_ticker}."
-    )
+    st.warning(f"No capital-allocation history " f"is available for {selected_ticker}.")
 
 else:
     history_display = history[
@@ -518,21 +397,14 @@ else:
         ]
     ].copy()
 
-    history_display = (
-        history_display.rename(
-            columns={
-                "year":
-                    "Period",
-                "cfo_sign":
-                    "CFO",
-                "cfi_sign":
-                    "CFI",
-                "cff_sign":
-                    "CFF",
-                "pattern_label":
-                    "Pattern",
-            }
-        )
+    history_display = history_display.rename(
+        columns={
+            "year": "Period",
+            "cfo_sign": "CFO",
+            "cfi_sign": "CFI",
+            "cff_sign": "CFF",
+            "pattern_label": "Pattern",
+        }
     )
 
     st.dataframe(

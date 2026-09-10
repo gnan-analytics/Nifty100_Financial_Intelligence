@@ -1,9 +1,8 @@
-﻿from pathlib import Path
 import sqlite3
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DB_PATH = PROJECT_ROOT / "db" / "nifty100.db"
@@ -34,8 +33,10 @@ def _table_exists(table_name):
 # companies.id = NSE ticker / company identifier
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_companies():
+    """Return companies."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -62,6 +63,7 @@ def get_companies():
 
 @st.cache_data(ttl=600)
 def get_company(ticker):
+    """Return company."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -91,8 +93,10 @@ def get_company(ticker):
 # FINANCIAL RATIOS
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_ratios(ticker, year=None):
+    """Return ratios."""
     params = [ticker]
 
     query = """
@@ -123,8 +127,10 @@ def get_ratios(ticker, year=None):
 # PROFIT & LOSS
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_pl(ticker):
+    """Return pl."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -142,8 +148,10 @@ def get_pl(ticker):
 # BALANCE SHEET
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_bs(ticker):
+    """Return bs."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -161,8 +169,10 @@ def get_bs(ticker):
 # CASH FLOW
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_cf(ticker):
+    """Return cf."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -180,8 +190,10 @@ def get_cf(ticker):
 # SECTORS
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_sectors():
+    """Return sectors."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -201,6 +213,7 @@ def get_sectors():
 
 @st.cache_data(ttl=600)
 def get_sector_for_company(ticker):
+    """Return sector for company."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -221,8 +234,10 @@ def get_sector_for_company(ticker):
 # PEER GROUPS
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_peer_groups():
+    """Return peer groups."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -237,6 +252,7 @@ def get_peer_groups():
 
 @st.cache_data(ttl=600)
 def get_peers(group_name):
+    """Return peers."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -264,9 +280,8 @@ def get_peers(group_name):
 
 @st.cache_data(ttl=600)
 def get_peer_percentiles(group_name=None):
-    if not _table_exists(
-        "peer_percentiles"
-    ):
+    """Return peer percentiles."""
+    if not _table_exists("peer_percentiles"):
         return pd.DataFrame()
 
     query = """
@@ -301,8 +316,10 @@ def get_peer_percentiles(group_name=None):
 # MARKET CAP / VALUATION
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_market_cap(ticker=None):
+    """Return market cap."""
     query = """
         SELECT *
         FROM market_cap
@@ -332,18 +349,13 @@ def get_market_cap(ticker=None):
 
 @st.cache_data(ttl=600)
 def get_valuation(ticker):
-    valuation_path = (
-        PROJECT_ROOT
-        / "output"
-        / "valuation_summary.xlsx"
-    )
+    """Return valuation."""
+    valuation_path = PROJECT_ROOT / "output" / "valuation_summary.xlsx"
 
     if not valuation_path.exists():
         return pd.DataFrame()
 
-    df = pd.read_excel(
-        valuation_path
-    )
+    df = pd.read_excel(valuation_path)
 
     ticker_column = None
 
@@ -359,20 +371,17 @@ def get_valuation(ticker):
     if ticker_column is None:
         return pd.DataFrame()
 
-    return df[
-        df[ticker_column]
-        .astype(str)
-        .str.upper()
-        .eq(str(ticker).upper())
-    ].copy()
+    return df[df[ticker_column].astype(str).str.upper().eq(str(ticker).upper())].copy()
 
 
 # ============================================================
 # PROS & CONS
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_pros_cons(ticker):
+    """Return pros cons."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -389,8 +398,10 @@ def get_pros_cons(ticker):
 # DOCUMENTS / ANNUAL REPORTS
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_documents(ticker):
+    """Return documents."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -408,18 +419,14 @@ def get_documents(ticker):
 # CAPITAL ALLOCATION
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_capital_allocation():
-    csv_path = (
-        PROJECT_ROOT
-        / "output"
-        / "capital_allocation.csv"
-    )
+    """Return capital allocation."""
+    csv_path = PROJECT_ROOT / "output" / "capital_allocation.csv"
 
     if csv_path.exists():
-        return pd.read_csv(
-            csv_path
-        )
+        return pd.read_csv(csv_path)
 
     return pd.DataFrame()
 
@@ -428,8 +435,10 @@ def get_capital_allocation():
 # LATEST RATIOS — ALL COMPANIES
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_latest_ratios_all():
+    """Return latest ratios all."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -464,8 +473,10 @@ def get_latest_ratios_all():
 # LATEST MARKET CAP — ALL COMPANIES
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_latest_market_cap_all():
+    """Return latest market cap all."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -493,8 +504,10 @@ def get_latest_market_cap_all():
 # LATEST P&L — ALL COMPANIES
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_latest_pl_all():
+    """Return latest pl all."""
     with _connect() as conn:
         return pd.read_sql_query(
             """
@@ -522,8 +535,10 @@ def get_latest_pl_all():
 # DASHBOARD MASTER DATASET
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_dashboard_master():
+    """Return dashboard master."""
     companies = get_companies()
     sectors = get_sectors()
     ratios = get_latest_ratios_all()
@@ -538,16 +553,13 @@ def get_dashboard_master():
         "market_cap_category",
     ]
 
-    sector_columns = [
-        col
-        for col in sector_columns
-        if col in sectors.columns
-    ]
+    sector_columns = [col for col in sector_columns if col in sectors.columns]
 
     ratio_columns = [
         col
         for col in ratios.columns
-        if col not in [
+        if col
+        not in [
             "id",
             "rn",
         ]
@@ -556,7 +568,8 @@ def get_dashboard_master():
     market_columns = [
         col
         for col in market.columns
-        if col not in [
+        if col
+        not in [
             "id",
             "rn",
             "year",
@@ -572,24 +585,16 @@ def get_dashboard_master():
         "dividend_payout",
     ]
 
-    pl_columns = [
-        col
-        for col in pl_columns
-        if col in pl.columns
-    ]
+    pl_columns = [col for col in pl_columns if col in pl.columns]
 
     df = companies.merge(
-        sectors[
-            sector_columns
-        ],
+        sectors[sector_columns],
         on="company_id",
         how="left",
     )
 
     df = df.merge(
-        ratios[
-            ratio_columns
-        ],
+        ratios[ratio_columns],
         on="company_id",
         how="left",
         suffixes=(
@@ -599,9 +604,7 @@ def get_dashboard_master():
     )
 
     df = df.merge(
-        market[
-            market_columns
-        ],
+        market[market_columns],
         on="company_id",
         how="left",
         suffixes=(
@@ -611,9 +614,7 @@ def get_dashboard_master():
     )
 
     df = df.merge(
-        pl[
-            pl_columns
-        ],
+        pl[pl_columns],
         on="company_id",
         how="left",
         suffixes=(
@@ -624,12 +625,15 @@ def get_dashboard_master():
 
     return df
 
+
 # ============================================================
 # YEAR-SPECIFIC DASHBOARD DATA
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_ratios_all_for_year(year):
+    """Return ratios all for year."""
     year_text = str(year)
 
     with _connect() as conn:
@@ -664,6 +668,7 @@ def get_ratios_all_for_year(year):
 
 @st.cache_data(ttl=600)
 def get_market_cap_all_for_year(year):
+    """Return market cap all for year."""
     year_text = str(year)
 
     with _connect() as conn:
@@ -691,6 +696,7 @@ def get_market_cap_all_for_year(year):
 
 @st.cache_data(ttl=600)
 def get_pl_all_for_year(year):
+    """Return pl all for year."""
     year_text = str(year)
 
     with _connect() as conn:
@@ -718,6 +724,7 @@ def get_pl_all_for_year(year):
 
 @st.cache_data(ttl=600)
 def get_dashboard_year(year):
+    """Return dashboard year."""
     companies = get_companies()
     sectors = get_sectors()
     ratios = get_ratios_all_for_year(year)
@@ -732,17 +739,9 @@ def get_dashboard_year(year):
         "market_cap_category",
     ]
 
-    ratio_cols = [
-        col
-        for col in ratios.columns
-        if col not in ["id", "rn"]
-    ]
+    ratio_cols = [col for col in ratios.columns if col not in ["id", "rn"]]
 
-    market_cols = [
-        col
-        for col in market.columns
-        if col not in ["id", "rn", "year"]
-    ]
+    market_cols = [col for col in market.columns if col not in ["id", "rn", "year"]]
 
     pl_cols = [
         "company_id",
@@ -753,17 +752,9 @@ def get_dashboard_year(year):
         "dividend_payout",
     ]
 
-    sector_cols = [
-        col
-        for col in sector_cols
-        if col in sectors.columns
-    ]
+    sector_cols = [col for col in sector_cols if col in sectors.columns]
 
-    pl_cols = [
-        col
-        for col in pl_cols
-        if col in pl.columns
-    ]
+    pl_cols = [col for col in pl_cols if col in pl.columns]
 
     df = companies.merge(
         sectors[sector_cols],
@@ -797,12 +788,15 @@ def get_dashboard_year(year):
 
     return df
 
+
 # ============================================================
 # SCREENER DATA
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_screener_data():
+    """Return screener data."""
     companies = get_companies()
     sectors = get_sectors()
     ratios = get_latest_ratios_all()
@@ -849,25 +843,13 @@ def get_screener_data():
         "net_profit",
     ]
 
-    sector_cols = [
-        c for c in sector_cols
-        if c in sectors.columns
-    ]
+    sector_cols = [c for c in sector_cols if c in sectors.columns]
 
-    ratio_cols = [
-        c for c in ratio_cols
-        if c in ratios.columns
-    ]
+    ratio_cols = [c for c in ratio_cols if c in ratios.columns]
 
-    market_cols = [
-        c for c in market_cols
-        if c in market.columns
-    ]
+    market_cols = [c for c in market_cols if c in market.columns]
 
-    pl_cols = [
-        c for c in pl_cols
-        if c in pl.columns
-    ]
+    pl_cols = [c for c in pl_cols if c in pl.columns]
 
     df = df.merge(
         sectors[sector_cols],
@@ -900,8 +882,10 @@ def get_screener_data():
 # PEER DASHBOARD DATA
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_peer_dashboard(group_name):
+    """Return peer dashboard."""
     peers = get_peers(group_name)
 
     if peers.empty:
@@ -921,11 +905,7 @@ def get_peer_dashboard(group_name):
         "composite_quality_score",
     ]
 
-    keep = [
-        col
-        for col in keep
-        if col in ratios.columns
-    ]
+    keep = [col for col in keep if col in ratios.columns]
 
     df = peers.merge(
         ratios[keep],
@@ -935,16 +915,17 @@ def get_peer_dashboard(group_name):
 
     return df
 
+
 # ============================================================
 # TREND ANALYSIS DATA
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_company_trends(ticker):
+    """Return company trends."""
     ratios = get_ratios(ticker)
     pl = get_pl(ticker)
-    bs = get_bs(ticker)
-    cf = get_cf(ticker)
 
     frames = []
 
@@ -958,14 +939,9 @@ def get_company_trends(ticker):
             "eps",
         ]
 
-        cols = [
-            c for c in cols
-            if c in pl.columns
-        ]
+        cols = [c for c in cols if c in pl.columns]
 
-        frames.append(
-            pl[cols].copy()
-        )
+        frames.append(pl[cols].copy())
 
     if not ratios.empty:
         cols = [
@@ -978,14 +954,9 @@ def get_company_trends(ticker):
             "asset_turnover",
         ]
 
-        cols = [
-            c for c in cols
-            if c in ratios.columns
-        ]
+        cols = [c for c in cols if c in ratios.columns]
 
-        ratio_df = ratios[
-            cols
-        ].copy()
+        ratio_df = ratios[cols].copy()
 
         if frames:
             frames[0] = frames[0].merge(
@@ -994,18 +965,14 @@ def get_company_trends(ticker):
                 how="outer",
             )
         else:
-            frames.append(
-                ratio_df
-            )
+            frames.append(ratio_df)
 
     if not frames:
         return pd.DataFrame()
 
     result = frames[0]
 
-    result = result.sort_values(
-        "year"
-    )
+    result = result.sort_values("year")
 
     return result
 
@@ -1014,8 +981,10 @@ def get_company_trends(ticker):
 # SECTOR ANALYSIS DATA
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_sector_dashboard():
+    """Return sector dashboard."""
     companies = get_companies()
     sectors = get_sectors()
     ratios = get_latest_ratios_all()
@@ -1060,49 +1029,25 @@ def get_sector_dashboard():
     ]
 
     df = df.merge(
-        sectors[
-            [
-                c
-                for c in sector_cols
-                if c in sectors.columns
-            ]
-        ],
+        sectors[[c for c in sector_cols if c in sectors.columns]],
         on="company_id",
         how="left",
     )
 
     df = df.merge(
-        ratios[
-            [
-                c
-                for c in ratio_cols
-                if c in ratios.columns
-            ]
-        ],
+        ratios[[c for c in ratio_cols if c in ratios.columns]],
         on="company_id",
         how="left",
     )
 
     df = df.merge(
-        market[
-            [
-                c
-                for c in market_cols
-                if c in market.columns
-            ]
-        ],
+        market[[c for c in market_cols if c in market.columns]],
         on="company_id",
         how="left",
     )
 
     df = df.merge(
-        pl[
-            [
-                c
-                for c in pl_cols
-                if c in pl.columns
-            ]
-        ],
+        pl[[c for c in pl_cols if c in pl.columns]],
         on="company_id",
         how="left",
     )
@@ -1114,8 +1059,10 @@ def get_sector_dashboard():
 # ANNUAL REPORT DATA
 # ============================================================
 
+
 @st.cache_data(ttl=600)
 def get_report_companies():
+    """Return report companies."""
     with _connect() as conn:
         return pd.read_sql_query(
             """

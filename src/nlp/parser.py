@@ -1,10 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import re
 from pathlib import Path
 
 import pandas as pd
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -63,6 +62,7 @@ def parse_metric_text(text: object) -> tuple[int, float] | None:
 
 
 def load_analysis() -> pd.DataFrame:
+    """Load analysis."""
     if not INPUT_PATH.exists():
         raise FileNotFoundError(f"Input file not found: {INPUT_PATH}")
 
@@ -72,16 +72,9 @@ def load_analysis() -> pd.DataFrame:
     missing = required_columns - set(df.columns)
 
     if missing:
-        raise ValueError(
-            f"analysis.xlsx missing required columns: {sorted(missing)}"
-        )
+        raise ValueError(f"analysis.xlsx missing required columns: {sorted(missing)}")
 
-    df["company_id"] = (
-        df["company_id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
+    df["company_id"] = df["company_id"].astype(str).str.strip().str.upper()
 
     return df
 
@@ -89,7 +82,7 @@ def load_analysis() -> pd.DataFrame:
 def parse_analysis(
     df: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-
+    """Parse analysis."""
     parsed_rows: list[dict] = []
     failure_rows: list[dict] = []
 
@@ -151,7 +144,7 @@ def validate_outputs(
     parsed_df: pd.DataFrame,
     failures_df: pd.DataFrame,
 ) -> None:
-
+    """Validate outputs."""
     expected_entries = len(source_df) * len(TARGET_FIELDS)
 
     actual_entries = len(parsed_df) + len(failures_df)
@@ -174,7 +167,6 @@ def validate_outputs(
 
         if parsed_df["value_pct"].isna().any():
             raise AssertionError("Parsed output contains missing value_pct")
-
 
 
 def cross_validate_cagr(parsed_df: pd.DataFrame) -> pd.DataFrame:
@@ -203,9 +195,7 @@ def cross_validate_cagr(parsed_df: pd.DataFrame) -> pd.DataFrame:
         )
     ].copy()
 
-    validation_df = validation_df[
-        validation_df["period_years"].isin([3, 5, 10])
-    ].copy()
+    validation_df = validation_df[validation_df["period_years"].isin([3, 5, 10])].copy()
 
     with sqlite3.connect(db_path) as conn:
         ratios = pd.read_sql_query(
@@ -231,12 +221,7 @@ def cross_validate_cagr(parsed_df: pd.DataFrame) -> pd.DataFrame:
         validation_df["validation_status"] = "NO_COMPUTED_VALUE"
         return validation_df
 
-    ratios["company_id"] = (
-        ratios["company_id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
+    ratios["company_id"] = ratios["company_id"].astype(str).str.strip().str.upper()
 
     ratios["_year_dt"] = pd.to_datetime(
         ratios["year"],
@@ -251,9 +236,7 @@ def cross_validate_cagr(parsed_df: pd.DataFrame) -> pd.DataFrame:
     for company_id, group in ratios.groupby("company_id"):
         group = group.sort_values("_year_dt", ascending=False)
 
-        march = group[
-            group["year"].astype(str).str.endswith("-03")
-        ]
+        march = group[group["year"].astype(str).str.endswith("-03")]
 
         if not march.empty:
             latest_rows.append(march.iloc[0])
@@ -335,7 +318,9 @@ def cross_validate_cagr(parsed_df: pd.DataFrame) -> pd.DataFrame:
         ]
     ]
 
+
 def main() -> None:
+    """Run the module entry point."""
     print("=" * 80)
     print("SPRINT 5 — DAY 29 ANALYSIS TEXT PARSER")
     print("=" * 80)
@@ -367,9 +352,7 @@ def main() -> None:
         index=False,
     )
 
-    cross_validation_path = (
-        PROJECT_ROOT / "output" / "cagr_cross_validation.csv"
-    )
+    cross_validation_path = PROJECT_ROOT / "output" / "cagr_cross_validation.csv"
 
     cross_validation_df.to_csv(
         cross_validation_path,
@@ -384,44 +367,23 @@ def main() -> None:
 
     print("\nPARSED COUNTS BY METRIC:")
     if not parsed_df.empty:
-        print(
-            parsed_df["metric_type"]
-            .value_counts()
-            .to_string()
-        )
+        print(parsed_df["metric_type"].value_counts().to_string())
 
     print("\nPARSED PERIODS:")
     if not parsed_df.empty:
-        print(
-            parsed_df["period_years"]
-            .value_counts()
-            .sort_index()
-            .to_string()
-        )
+        print(parsed_df["period_years"].value_counts().sort_index().to_string())
 
     print("\nFAILURE TYPES:")
     if not failures_df.empty:
-        print(
-            failures_df["metric_type"]
-            .value_counts()
-            .to_string()
-        )
+        print(failures_df["metric_type"].value_counts().to_string())
     else:
         print("None")
 
     print("\nCAGR CROSS-VALIDATION:")
     if not cross_validation_df.empty:
-        print(
-            cross_validation_df["validation_status"]
-            .value_counts()
-            .to_string()
-        )
+        print(cross_validation_df["validation_status"].value_counts().to_string())
 
-        review_count = (
-            cross_validation_df["validation_status"]
-            .eq("REVIEW_GT_5")
-            .sum()
-        )
+        review_count = cross_validation_df["validation_status"].eq("REVIEW_GT_5").sum()
 
         print(f"\nManual review flags (>5pp): {review_count}")
 

@@ -1,5 +1,5 @@
-﻿from pathlib import Path
 import sqlite3
+
 import pandas as pd
 
 from src.screener.engine import (
@@ -10,9 +10,8 @@ from src.screener.engine import (
 
 
 def check_quality_compounder():
-    df = run_preset(
-        "quality_compounder"
-    )
+    """Check quality compounder."""
+    df = run_preset("quality_compounder")
 
     cols = [
         "company_id",
@@ -25,10 +24,7 @@ def check_quality_compounder():
         "composite_quality_score",
     ]
 
-    cols = [
-        c for c in cols
-        if c in df.columns
-    ]
+    cols = [c for c in cols if c in df.columns]
 
     df = df.sort_values(
         "composite_quality_score",
@@ -40,21 +36,14 @@ def check_quality_compounder():
     print("QUALITY COMPOUNDER - TOP 5")
     print("=" * 90)
 
-    print(
-        df[cols]
-        .head(5)
-        .to_string(
-            index=False
-        )
-    )
+    print(df[cols].head(5).to_string(index=False))
 
     return len(df)
 
 
 def check_it_services():
-    with sqlite3.connect(
-        DB_PATH
-    ) as conn:
+    """Check it services."""
+    with sqlite3.connect(DB_PATH) as conn:
         df = pd.read_sql_query(
             """
             SELECT
@@ -77,11 +66,7 @@ def check_it_services():
     print("IT SERVICES - ROE PEER RANK")
     print("=" * 90)
 
-    print(
-        df.to_string(
-            index=False
-        )
-    )
+    print(df.to_string(index=False))
 
     highest = df.dropna(
         subset=[
@@ -90,12 +75,7 @@ def check_it_services():
         ]
     ).iloc[0]
 
-    assert (
-        highest[
-            "percentile_rank"
-        ]
-        == 100.0
-    )
+    assert highest["percentile_rank"] == 100.0
 
     print()
     print(
@@ -105,32 +85,18 @@ def check_it_services():
 
     print(
         "Highest percentile:",
-        highest[
-            "percentile_rank"
-        ],
+        highest["percentile_rank"],
     )
 
-    print(
-        "IT Services ROE check: PASS"
-    )
+    print("IT Services ROE check: PASS")
 
 
 def check_outputs():
+    """Check outputs."""
     outputs = {
-        "Screener workbook":
-            PROJECT_ROOT
-            / "output"
-            / "screener_output.xlsx",
-
-        "Peer workbook":
-            PROJECT_ROOT
-            / "output"
-            / "peer_comparison.xlsx",
-
-        "Radar directory":
-            PROJECT_ROOT
-            / "reports"
-            / "radar_charts",
+        "Screener workbook": PROJECT_ROOT / "output" / "screener_output.xlsx",
+        "Peer workbook": PROJECT_ROOT / "output" / "peer_comparison.xlsx",
+        "Radar directory": PROJECT_ROOT / "reports" / "radar_charts",
     }
 
     print()
@@ -138,29 +104,16 @@ def check_outputs():
     print("OUTPUT VALIDATION")
     print("=" * 90)
 
-    for name, path in (
-        outputs.items()
-    ):
+    for name, path in outputs.items():
         exists = path.exists()
 
-        print(
-            f"{name}: "
-            f"{'PASS' if exists else 'FAIL'}"
-        )
+        print(f"{name}: " f"{'PASS' if exists else 'FAIL'}")
 
         assert exists
 
-    radar_dir = outputs[
-        "Radar directory"
-    ]
+    radar_dir = outputs["Radar directory"]
 
-    radar_count = len(
-        list(
-            radar_dir.glob(
-                "*.png"
-            )
-        )
-    )
+    radar_count = len(list(radar_dir.glob("*.png")))
 
     print(
         "Radar chart count:",
@@ -171,11 +124,9 @@ def check_outputs():
 
 
 def check_peer_table():
-    with sqlite3.connect(
-        DB_PATH
-    ) as conn:
-        result = conn.execute(
-            """
+    """Check peer table."""
+    with sqlite3.connect(DB_PATH) as conn:
+        result = conn.execute("""
             SELECT
                 COUNT(*),
                 COUNT(
@@ -185,8 +136,7 @@ def check_peer_table():
                     DISTINCT metric
                 )
             FROM peer_percentiles
-            """
-        ).fetchone()
+            """).fetchone()
 
     rows, groups, metrics = result
 
@@ -214,20 +164,17 @@ def check_peer_table():
     assert groups == 11
     assert metrics == 10
 
-    print(
-        "Peer percentile table: PASS"
-    )
+    print("Peer percentile table: PASS")
 
 
 def main():
+    """Run the module entry point."""
     print("=" * 90)
     print("SPRINT 3 - DAY 21")
     print("FINAL VALIDATION")
     print("=" * 90)
 
-    quality_count = (
-        check_quality_compounder()
-    )
+    quality_count = check_quality_compounder()
 
     print()
     print(
@@ -235,11 +182,7 @@ def main():
         quality_count,
     )
 
-    assert (
-        5
-        <= quality_count
-        <= 50
-    )
+    assert 5 <= quality_count <= 50
 
     check_it_services()
 
@@ -249,9 +192,7 @@ def main():
 
     print()
     print("=" * 90)
-    print(
-        "DAY 21 VALIDATION COMPLETE"
-    )
+    print("DAY 21 VALIDATION COMPLETE")
     print("=" * 90)
 
 

@@ -1,11 +1,11 @@
-﻿import html
+import html
 import re
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import streamlit as st
+from plotly.subplots import make_subplots
 
 from src.dashboard.utils.db import (
     get_bs,
@@ -18,22 +18,20 @@ from src.dashboard.utils.db import (
     get_sector_for_company,
 )
 
-
 st.title("🏢 Company Profile")
 
-st.caption(
-    "Company fundamentals, profitability "
-    "and historical trends"
-)
+st.caption("Company fundamentals, profitability " "and historical trends")
 
 
 # ------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------
 
+
 def clean_number(
     value,
 ):
+    """Handle clean number."""
     try:
         if value is None:
             return None
@@ -54,28 +52,21 @@ def format_metric(
     suffix="",
     decimals=1,
 ):
-    value = clean_number(
-        value
-    )
+    """Format metric."""
+    value = clean_number(value)
 
     if value is None:
         return "N/A"
 
-    return (
-        f"{value:,.{decimals}f}"
-        f"{suffix}"
-    )
+    return f"{value:,.{decimals}f}" f"{suffix}"
 
 
 def latest_non_null(
     dataframe,
     column,
 ):
-    if (
-        dataframe.empty
-        or column
-        not in dataframe.columns
-    ):
+    """Handle latest non null."""
+    if dataframe.empty or column not in dataframe.columns:
         return None
 
     values = pd.to_numeric(
@@ -92,20 +83,17 @@ def latest_non_null(
 def split_items(
     value,
 ):
+    """Split items."""
     if value is None:
         return []
 
     if isinstance(
         value,
         float,
-    ) and pd.isna(
-        value
-    ):
+    ) and pd.isna(value):
         return []
 
-    text = str(
-        value
-    ).strip()
+    text = str(value).strip()
 
     if not text:
         return []
@@ -115,15 +103,7 @@ def split_items(
         text,
     )
 
-    return [
-        part.strip(
-            " -\t"
-        )
-        for part in parts
-        if part.strip(
-            " -\t"
-        )
-    ]
+    return [part.strip(" -\t") for part in parts if part.strip(" -\t")]
 
 
 # ------------------------------------------------------------
@@ -134,9 +114,7 @@ companies = get_companies()
 
 search_text = st.text_input(
     "Search company name or ticker",
-    placeholder=(
-        "Example: TCS, Infosys, Reliance..."
-    ),
+    placeholder=("Example: TCS, Infosys, Reliance..."),
 )
 
 filtered = companies.copy()
@@ -145,19 +123,14 @@ if search_text.strip():
     term = search_text.strip().lower()
 
     filtered = filtered[
-        filtered[
-            "company_id"
-        ]
+        filtered["company_id"]
         .astype(str)
         .str.lower()
         .str.contains(
             term,
             regex=False,
         )
-        |
-        filtered[
-            "company_name"
-        ]
+        | filtered["company_name"]
         .astype(str)
         .str.lower()
         .str.contains(
@@ -167,9 +140,7 @@ if search_text.strip():
     ]
 
 if filtered.empty:
-    st.warning(
-        "Ticker not found — please try another"
-    )
+    st.warning("Ticker not found — please try another")
     st.stop()
 
 
@@ -180,16 +151,8 @@ options = filtered[
     ]
 ].copy()
 
-options[
-    "label"
-] = (
-    options[
-        "company_id"
-    ].astype(str)
-    + " — "
-    + options[
-        "company_name"
-    ].astype(str)
+options["label"] = (
+    options["company_id"].astype(str) + " — " + options["company_name"].astype(str)
 )
 
 selected_label = st.selectbox(
@@ -197,55 +160,32 @@ selected_label = st.selectbox(
     options["label"].tolist(),
 )
 
-selected_row = options[
-    options["label"]
-    == selected_label
-].iloc[0]
+selected_row = options[options["label"] == selected_label].iloc[0]
 
-ticker = selected_row[
-    "company_id"
-]
+ticker = selected_row["company_id"]
 
 
 # ------------------------------------------------------------
 # Load Company Data
 # ------------------------------------------------------------
 
-company = get_company(
-    ticker
-)
+company = get_company(ticker)
 
-sector = (
-    get_sector_for_company(
-        ticker
-    )
-)
+sector = get_sector_for_company(ticker)
 
-ratios = get_ratios(
-    ticker
-)
+ratios = get_ratios(ticker)
 
-pl = get_pl(
-    ticker
-)
+pl = get_pl(ticker)
 
-bs = get_bs(
-    ticker
-)
+bs = get_bs(ticker)
 
-cf = get_cf(
-    ticker
-)
+cf = get_cf(ticker)
 
-pros_cons = get_pros_cons(
-    ticker
-)
+pros_cons = get_pros_cons(ticker)
 
 
 if company.empty:
-    st.warning(
-        "Ticker not found — please try another"
-    )
+    st.warning("Ticker not found — please try another")
     st.stop()
 
 
@@ -266,13 +206,8 @@ about = company_row.get(
     "",
 )
 
-if (
-    about is None
-    or pd.isna(about)
-):
-    about = (
-        "Company description unavailable."
-    )
+if about is None or pd.isna(about):
+    about = "Company description unavailable."
 
 
 broad_sector = "N/A"
@@ -281,44 +216,28 @@ sub_sector = "N/A"
 if not sector.empty:
     sector_row = sector.iloc[0]
 
-    broad_sector = (
-        sector_row.get(
-            "broad_sector",
-            "N/A",
-        )
+    broad_sector = sector_row.get(
+        "broad_sector",
+        "N/A",
     )
 
-    sub_sector = (
-        sector_row.get(
-            "sub_sector",
-            "N/A",
-        )
+    sub_sector = sector_row.get(
+        "sub_sector",
+        "N/A",
     )
 
 
-st.subheader(
-    f"{company_name} ({ticker})"
-)
+st.subheader(f"{company_name} ({ticker})")
 
-c1, c2, c3 = st.columns(
-    [1, 1, 1]
-)
+c1, c2, c3 = st.columns([1, 1, 1])
 
-c1.markdown(
-    f"**Sector**  \n{broad_sector}"
-)
+c1.markdown(f"**Sector**  \n{broad_sector}")
 
-c2.markdown(
-    f"**Sub-sector**  \n{sub_sector}"
-)
+c2.markdown(f"**Sub-sector**  \n{sub_sector}")
 
-c3.markdown(
-    f"**NSE Ticker**  \n{ticker}"
-)
+c3.markdown(f"**NSE Ticker**  \n{ticker}")
 
-st.markdown(
-    str(about)
-)
+st.markdown(str(about))
 
 st.divider()
 
@@ -358,9 +277,7 @@ fcf = latest_non_null(
 )
 
 
-m1, m2, m3, m4, m5, m6 = st.columns(
-    6
-)
+m1, m2, m3, m4, m5, m6 = st.columns(6)
 
 m1.metric(
     "ROE",
@@ -405,13 +322,7 @@ m5.metric(
 
 m6.metric(
     "Free Cash Flow",
-    (
-        "N/A"
-        if clean_number(
-            fcf
-        ) is None
-        else f"₹{fcf:,.0f} Cr"
-    ),
+    ("N/A" if clean_number(fcf) is None else f"₹{fcf:,.0f} Cr"),
 )
 
 
@@ -419,53 +330,32 @@ m6.metric(
 # Revenue + Net Profit Chart
 # ------------------------------------------------------------
 
-st.subheader(
-    "Revenue & Net Profit — 10 Year Trend"
-)
+st.subheader("Revenue & Net Profit — 10 Year Trend")
 
 if not pl.empty:
     pl_chart = pl.copy()
 
-    pl_chart[
-        "year_sort"
-    ] = pd.to_datetime(
-        pl_chart[
-            "year"
-        ].astype(str)
-        + "-01",
+    pl_chart["year_sort"] = pd.to_datetime(
+        pl_chart["year"].astype(str) + "-01",
         errors="coerce",
     )
 
-    pl_chart = (
-        pl_chart
-        .sort_values(
-            "year_sort"
-        )
-        .tail(10)
-    )
+    pl_chart = pl_chart.sort_values("year_sort").tail(10)
 
     fig = go.Figure()
 
     fig.add_trace(
         go.Bar(
-            x=pl_chart[
-                "year"
-            ],
-            y=pl_chart[
-                "sales"
-            ],
+            x=pl_chart["year"],
+            y=pl_chart["sales"],
             name="Revenue",
         )
     )
 
     fig.add_trace(
         go.Bar(
-            x=pl_chart[
-                "year"
-            ],
-            y=pl_chart[
-                "net_profit"
-            ],
+            x=pl_chart["year"],
+            y=pl_chart["net_profit"],
             name="Net Profit",
         )
     )
@@ -489,63 +379,33 @@ if not pl.empty:
     )
 
     if len(pl_chart) < 10:
-        st.caption(
-            "Data available for only "
-            f"{len(pl_chart)} periods."
-        )
+        st.caption("Data available for only " f"{len(pl_chart)} periods.")
 else:
-    st.info(
-        "Revenue and profit history unavailable."
-    )
+    st.info("Revenue and profit history unavailable.")
 
 
 # ------------------------------------------------------------
 # ROE + ROCE Dual Axis Chart
 # ------------------------------------------------------------
 
-st.subheader(
-    "ROE & ROCE — 10 Year Trend"
-)
+st.subheader("ROE & ROCE — 10 Year Trend")
 
 if not ratios.empty:
     ratio_chart = ratios.copy()
 
-    ratio_chart[
-        "year_sort"
-    ] = pd.to_datetime(
-        ratio_chart[
-            "year"
-        ].astype(str)
-        + "-01",
+    ratio_chart["year_sort"] = pd.to_datetime(
+        ratio_chart["year"].astype(str) + "-01",
         errors="coerce",
     )
 
-    ratio_chart = (
-        ratio_chart
-        .sort_values(
-            "year_sort"
-        )
-        .tail(10)
-    )
+    ratio_chart = ratio_chart.sort_values("year_sort").tail(10)
 
-    fig2 = make_subplots(
-        specs=[
-            [
-                {
-                    "secondary_y": True
-                }
-            ]
-        ]
-    )
+    fig2 = make_subplots(specs=[[{"secondary_y": True}]])
 
     fig2.add_trace(
         go.Scatter(
-            x=ratio_chart[
-                "year"
-            ],
-            y=ratio_chart[
-                "return_on_equity_pct"
-            ],
+            x=ratio_chart["year"],
+            y=ratio_chart["return_on_equity_pct"],
             mode="lines+markers",
             name="ROE",
         ),
@@ -554,12 +414,8 @@ if not ratios.empty:
 
     fig2.add_trace(
         go.Scatter(
-            x=ratio_chart[
-                "year"
-            ],
-            y=ratio_chart[
-                "return_on_capital_employed_pct"
-            ],
+            x=ratio_chart["year"],
+            y=ratio_chart["return_on_capital_employed_pct"],
             mode="lines+markers",
             name="ROCE",
         ),
@@ -593,62 +449,35 @@ if not ratios.empty:
     )
 
     if len(ratio_chart) < 10:
-        st.caption(
-            "Data available for only "
-            f"{len(ratio_chart)} periods."
-        )
+        st.caption("Data available for only " f"{len(ratio_chart)} periods.")
 else:
-    st.info(
-        "ROE and ROCE history unavailable."
-    )
+    st.info("ROE and ROCE history unavailable.")
 
 
 # ------------------------------------------------------------
 # Pros and Cons
 # ------------------------------------------------------------
 
-st.subheader(
-    "Pros & Cons"
-)
+st.subheader("Pros & Cons")
 
 pros = []
 cons = []
 
 if not pros_cons.empty:
-    for _, row in (
-        pros_cons.iterrows()
-    ):
-        pros.extend(
-            split_items(
-                row.get(
-                    "pros"
-                )
-            )
-        )
+    for _, row in pros_cons.iterrows():
+        pros.extend(split_items(row.get("pros")))
 
-        cons.extend(
-            split_items(
-                row.get(
-                    "cons"
-                )
-            )
-        )
+        cons.extend(split_items(row.get("cons")))
 
 
-pros_col, cons_col = st.columns(
-    2
-)
+pros_col, cons_col = st.columns(2)
 
 with pros_col:
-    st.markdown(
-        "### ✅ Pros"
-    )
+    st.markdown("### ✅ Pros")
 
     if pros:
         for item in pros:
-            safe = html.escape(
-                item
-            )
+            safe = html.escape(item)
 
             st.markdown(
                 f"""
@@ -665,21 +494,15 @@ with pros_col:
                 unsafe_allow_html=True,
             )
     else:
-        st.caption(
-            "No pros available."
-        )
+        st.caption("No pros available.")
 
 
 with cons_col:
-    st.markdown(
-        "### ❌ Cons"
-    )
+    st.markdown("### ❌ Cons")
 
     if cons:
         for item in cons:
-            safe = html.escape(
-                item
-            )
+            safe = html.escape(item)
 
             st.markdown(
                 f"""
@@ -696,6 +519,4 @@ with cons_col:
                 unsafe_allow_html=True,
             )
     else:
-        st.caption(
-            "No cons available."
-        )
+        st.caption("No cons available.")

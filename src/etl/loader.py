@@ -1,10 +1,9 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
 import pandas as pd
 
 from src.etl.normaliser import normalize_ticker, normalize_year
-
 
 # =========================================================
 # PATHS
@@ -38,17 +37,14 @@ SUPPLEMENTARY_FILES = [
 # COLUMN CLEANING
 # =========================================================
 
+
 def clean_column_names(df):
     """
     Convert Excel column names to lowercase snake_case.
     """
 
     df.columns = [
-        str(column)
-        .strip()
-        .lower()
-        .replace(" ", "_")
-        for column in df.columns
+        str(column).strip().lower().replace(" ", "_") for column in df.columns
     ]
 
     return df
@@ -57,6 +53,7 @@ def clean_column_names(df):
 # =========================================================
 # EXCEL LOADER
 # =========================================================
+
 
 def load_excel_file(path, header):
     """
@@ -75,6 +72,7 @@ def load_excel_file(path, header):
 # COMPANY / TICKER NORMALIZATION
 # =========================================================
 
+
 def normalize_company_id(df):
     """
     Normalize company identifiers.
@@ -82,20 +80,11 @@ def normalize_company_id(df):
 
     if "company_id" in df.columns:
 
-        df["company_id"] = (
-            df["company_id"]
-            .apply(normalize_ticker)
-        )
+        df["company_id"] = df["company_id"].apply(normalize_ticker)
 
-    if (
-        "id" in df.columns
-        and "company_name" in df.columns
-    ):
+    if "id" in df.columns and "company_name" in df.columns:
 
-        df["id"] = (
-            df["id"]
-            .apply(normalize_ticker)
-        )
+        df["id"] = df["id"].apply(normalize_ticker)
 
     return df
 
@@ -103,6 +92,7 @@ def normalize_company_id(df):
 # =========================================================
 # YEAR NORMALIZATION
 # =========================================================
+
 
 def normalize_year_column(df):
     """
@@ -121,15 +111,11 @@ def normalize_year_column(df):
 
         try:
 
-            normalized_values.append(
-                normalize_year(value)
-            )
+            normalized_values.append(normalize_year(value))
 
         except ValueError:
 
-            normalized_values.append(
-                value
-            )
+            normalized_values.append(value)
 
     df["year"] = normalized_values
 
@@ -139,6 +125,7 @@ def normalize_year_column(df):
 # =========================================================
 # DQ-02 DEDUPLICATION
 # =========================================================
+
 
 def deduplicate_company_year(
     df,
@@ -155,9 +142,7 @@ def deduplicate_company_year(
         "year",
     }
 
-    if not required.issubset(
-        df.columns
-    ):
+    if not required.issubset(df.columns):
         return df
 
     duplicate_mask = df.duplicated(
@@ -168,34 +153,23 @@ def deduplicate_company_year(
         keep=False,
     )
 
-    duplicate_count = int(
-        duplicate_mask.sum()
-    )
+    duplicate_count = int(duplicate_mask.sum())
 
     if duplicate_count > 0:
 
-        print(
-            f"Deduplicating {table_name}: "
-            f"{duplicate_count} duplicate rows found"
-        )
+        print(f"Deduplicating {table_name}: " f"{duplicate_count} duplicate rows found")
 
         original_count = len(df)
 
-        df = (
-            df.drop_duplicates(
-                subset=[
-                    "company_id",
-                    "year",
-                ],
-                keep="last",
-            )
-            .reset_index(drop=True)
-        )
+        df = df.drop_duplicates(
+            subset=[
+                "company_id",
+                "year",
+            ],
+            keep="last",
+        ).reset_index(drop=True)
 
-        removed_count = (
-            original_count
-            - len(df)
-        )
+        removed_count = original_count - len(df)
 
         print(
             f"Removed {removed_count} rows "
@@ -210,6 +184,7 @@ def deduplicate_company_year(
 # DQ-07 INVALID YEAR CLEANUP
 # =========================================================
 
+
 def reject_invalid_year_rows(
     datasets,
 ):
@@ -217,9 +192,7 @@ def reject_invalid_year_rows(
     Reject rows where year is not valid YYYY-MM.
     """
 
-    pattern = re.compile(
-        r"^\d{4}-\d{2}$"
-    )
+    pattern = re.compile(r"^\d{4}-\d{2}$")
 
     rejected_rows = []
 
@@ -238,28 +211,18 @@ def reject_invalid_year_rows(
 
             if pd.notna(value):
 
-                value_text = str(
-                    value
-                ).strip()
+                value_text = str(value).strip()
 
-                if pattern.fullmatch(
-                    value_text
-                ):
+                if pattern.fullmatch(value_text):
 
-                    month = int(
-                        value_text.split(
-                            "-"
-                        )[1]
-                    )
+                    month = int(value_text.split("-")[1])
 
                     if 1 <= month <= 12:
                         valid = True
 
             if not valid:
 
-                invalid_indexes.append(
-                    index
-                )
+                invalid_indexes.append(index)
 
                 rejected_rows.append(
                     {
@@ -268,17 +231,10 @@ def reject_invalid_year_rows(
                         "severity": "CRITICAL",
                         "status": "RESOLVED_REJECTED",
                         "row_index": index,
-                        "company_id": row.get(
-                            "company_id"
-                        ),
+                        "company_id": row.get("company_id"),
                         "year": value,
-                        "message": (
-                            "Invalid year format"
-                        ),
-                        "action": (
-                            "Rejected before "
-                            "database load"
-                        ),
+                        "message": ("Invalid year format"),
+                        "action": ("Rejected before " "database load"),
                     }
                 )
 
@@ -291,14 +247,7 @@ def reject_invalid_year_rows(
                 f"invalid year rows"
             )
 
-            datasets[table_name] = (
-                df.drop(
-                    index=invalid_indexes
-                )
-                .reset_index(
-                    drop=True
-                )
-            )
+            datasets[table_name] = df.drop(index=invalid_indexes).reset_index(drop=True)
 
     return (
         datasets,
@@ -310,6 +259,7 @@ def reject_invalid_year_rows(
 # DQ-03 FK CLEANUP
 # =========================================================
 
+
 def reject_orphan_company_ids(
     datasets,
 ):
@@ -318,15 +268,9 @@ def reject_orphan_company_ids(
     present in companies.id.
     """
 
-    companies = datasets[
-        "companies"
-    ]
+    companies = datasets["companies"]
 
-    valid_company_ids = set(
-        companies["id"]
-        .dropna()
-        .tolist()
-    )
+    valid_company_ids = set(companies["id"].dropna().tolist())
 
     rejected_rows = []
 
@@ -338,14 +282,9 @@ def reject_orphan_company_ids(
         if "company_id" not in df.columns:
             continue
 
-        orphan_mask = (
-            ~df["company_id"]
-            .isin(valid_company_ids)
-        )
+        orphan_mask = ~df["company_id"].isin(valid_company_ids)
 
-        orphan_rows = df[
-            orphan_mask
-        ]
+        orphan_rows = df[orphan_mask]
 
         if len(orphan_rows) == 0:
             continue
@@ -357,9 +296,7 @@ def reject_orphan_company_ids(
             f"orphan FK rows"
         )
 
-        for index, row in (
-            orphan_rows.iterrows()
-        ):
+        for index, row in orphan_rows.iterrows():
 
             rejected_rows.append(
                 {
@@ -368,31 +305,14 @@ def reject_orphan_company_ids(
                     "severity": "CRITICAL",
                     "status": "RESOLVED_REJECTED",
                     "row_index": index,
-                    "company_id": row.get(
-                        "company_id"
-                    ),
-                    "year": row.get(
-                        "year"
-                    ),
-                    "message": (
-                        "company_id not found "
-                        "in companies.id"
-                    ),
-                    "action": (
-                        "Rejected before "
-                        "database load"
-                    ),
+                    "company_id": row.get("company_id"),
+                    "year": row.get("year"),
+                    "message": ("company_id not found " "in companies.id"),
+                    "action": ("Rejected before " "database load"),
                 }
             )
 
-        datasets[table_name] = (
-            df[
-                ~orphan_mask
-            ]
-            .reset_index(
-                drop=True
-            )
-        )
+        datasets[table_name] = df[~orphan_mask].reset_index(drop=True)
 
     return (
         datasets,
@@ -404,6 +324,7 @@ def reject_orphan_company_ids(
 # LOAD CORE DATASETS
 # =========================================================
 
+
 def load_core_datasets():
     """
     Load all 7 core datasets.
@@ -413,16 +334,11 @@ def load_core_datasets():
 
     for filename in CORE_FILES:
 
-        path = (
-            CORE_DIR
-            / filename
-        )
+        path = CORE_DIR / filename
 
         if not path.exists():
 
-            raise FileNotFoundError(
-                f"Missing file: {path}"
-            )
+            raise FileNotFoundError(f"Missing file: {path}")
 
         # Core files use header=1
         df = load_excel_file(
@@ -430,15 +346,11 @@ def load_core_datasets():
             header=1,
         )
 
-        df = normalize_company_id(
-            df
-        )
+        df = normalize_company_id(df)
 
         if "year" in df.columns:
 
-            df = normalize_year_column(
-                df
-            )
+            df = normalize_year_column(df)
 
         # Composite key datasets
         if filename in [
@@ -447,21 +359,15 @@ def load_core_datasets():
             "cashflow.xlsx",
         ]:
 
-            df = (
-                deduplicate_company_year(
-                    df,
-                    path.stem,
-                )
+            df = deduplicate_company_year(
+                df,
+                path.stem,
             )
 
-        datasets[
-            path.stem
-        ] = df
+        datasets[path.stem] = df
 
         print(
-            f"Loaded {filename:<25} "
-            f"rows={len(df):<6} "
-            f"columns={len(df.columns)}"
+            f"Loaded {filename:<25} " f"rows={len(df):<6} " f"columns={len(df.columns)}"
         )
 
     return datasets
@@ -471,6 +377,7 @@ def load_core_datasets():
 # LOAD SUPPLEMENTARY DATASETS
 # =========================================================
 
+
 def load_supplementary_datasets():
     """
     Load all 5 supplementary datasets.
@@ -478,20 +385,13 @@ def load_supplementary_datasets():
 
     datasets = {}
 
-    for filename in (
-        SUPPLEMENTARY_FILES
-    ):
+    for filename in SUPPLEMENTARY_FILES:
 
-        path = (
-            SUPPLEMENTARY_DIR
-            / filename
-        )
+        path = SUPPLEMENTARY_DIR / filename
 
         if not path.exists():
 
-            raise FileNotFoundError(
-                f"Missing file: {path}"
-            )
+            raise FileNotFoundError(f"Missing file: {path}")
 
         # Supplementary files use header=0
         df = load_excel_file(
@@ -499,15 +399,11 @@ def load_supplementary_datasets():
             header=0,
         )
 
-        df = normalize_company_id(
-            df
-        )
+        df = normalize_company_id(df)
 
         if "year" in df.columns:
 
-            df = normalize_year_column(
-                df
-            )
+            df = normalize_year_column(df)
 
         # These also use company_id + year
         # as their composite key
@@ -516,21 +412,15 @@ def load_supplementary_datasets():
             "financial_ratios.xlsx",
         ]:
 
-            df = (
-                deduplicate_company_year(
-                    df,
-                    path.stem,
-                )
+            df = deduplicate_company_year(
+                df,
+                path.stem,
             )
 
-        datasets[
-            path.stem
-        ] = df
+        datasets[path.stem] = df
 
         print(
-            f"Loaded {filename:<25} "
-            f"rows={len(df):<6} "
-            f"columns={len(df.columns)}"
+            f"Loaded {filename:<25} " f"rows={len(df):<6} " f"columns={len(df.columns)}"
         )
 
     return datasets
@@ -540,6 +430,7 @@ def load_supplementary_datasets():
 # LOAD ALL DATASETS
 # =========================================================
 
+
 def load_all_datasets():
     """
     Load, normalize, deduplicate,
@@ -547,24 +438,16 @@ def load_all_datasets():
     """
 
     print()
-    print(
-        "Loading core datasets"
-    )
+    print("Loading core datasets")
     print("-" * 60)
 
-    core = (
-        load_core_datasets()
-    )
+    core = load_core_datasets()
 
     print()
-    print(
-        "Loading supplementary datasets"
-    )
+    print("Loading supplementary datasets")
     print("-" * 60)
 
-    supplementary = (
-        load_supplementary_datasets()
-    )
+    supplementary = load_supplementary_datasets()
 
     datasets = {
         **core,
@@ -572,62 +455,38 @@ def load_all_datasets():
     }
 
     print()
-    print(
-        "Running DQ-07 year cleanup"
-    )
+    print("Running DQ-07 year cleanup")
     print("-" * 60)
 
     (
         datasets,
         year_rejections,
-    ) = reject_invalid_year_rows(
-        datasets
-    )
+    ) = reject_invalid_year_rows(datasets)
 
     print()
-    print(
-        "Running DQ-03 FK cleanup"
-    )
+    print("Running DQ-03 FK cleanup")
     print("-" * 60)
 
     (
         datasets,
         fk_rejections,
-    ) = reject_orphan_company_ids(
-        datasets
-    )
+    ) = reject_orphan_company_ids(datasets)
 
     print()
-    print(
-        "Load summary"
-    )
+    print("Load summary")
     print("-" * 60)
 
-    for name, df in (
-        datasets.items()
-    ):
+    for name, df in datasets.items():
 
-        print(
-            f"{name:<25} "
-            f"{df.shape}"
-        )
+        print(f"{name:<25} " f"{df.shape}")
 
     print()
 
-    print(
-        f"Total datasets loaded: "
-        f"{len(datasets)}"
-    )
+    print(f"Total datasets loaded: " f"{len(datasets)}")
 
-    print(
-        f"DQ-07 rejected rows: "
-        f"{len(year_rejections)}"
-    )
+    print(f"DQ-07 rejected rows: " f"{len(year_rejections)}")
 
-    print(
-        f"DQ-03 rejected rows: "
-        f"{len(fk_rejections)}"
-    )
+    print(f"DQ-03 rejected rows: " f"{len(fk_rejections)}")
 
     return datasets
 

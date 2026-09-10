@@ -1,10 +1,9 @@
-from pathlib import Path
 import sqlite3
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import yaml
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = PROJECT_ROOT / "db" / "nifty100.db"
@@ -12,11 +11,13 @@ CONFIG_PATH = PROJECT_ROOT / "config" / "screener_config.yaml"
 
 
 def load_config(config_path=CONFIG_PATH):
+    """Load config."""
     with open(config_path, "r", encoding="utf-8") as file:
         return yaml.safe_load(file)
 
 
 def load_latest_financial_ratios(conn):
+    """Load latest financial ratios."""
     query = """
     WITH ranked AS (
         SELECT
@@ -46,6 +47,7 @@ def load_latest_financial_ratios(conn):
 
 
 def load_latest_profit_loss(conn):
+    """Load latest profit loss."""
     query = """
     WITH ranked AS (
         SELECT
@@ -75,6 +77,7 @@ def load_latest_profit_loss(conn):
 
 
 def load_latest_market_cap(conn):
+    """Load latest market cap."""
     query = """
     WITH ranked AS (
         SELECT
@@ -102,6 +105,7 @@ def load_latest_market_cap(conn):
 
 
 def load_company_metadata(conn):
+    """Load company metadata."""
     query = """
     SELECT
         c.id AS company_id,
@@ -118,6 +122,7 @@ def load_company_metadata(conn):
 
 
 def load_screener_dataframe(db_path=DB_PATH):
+    """Load screener dataframe."""
     with sqlite3.connect(db_path) as conn:
         ratios = load_latest_financial_ratios(conn)
         pnl = load_latest_profit_loss(conn)
@@ -159,14 +164,9 @@ def load_screener_dataframe(db_path=DB_PATH):
         .eq("financials")
     )
 
-    df["interest_coverage_effective"] = (
-        df["interest_coverage"].copy()
-    )
+    df["interest_coverage_effective"] = df["interest_coverage"].copy()
 
-    debt_free_mask = (
-    df["interest"].notna()
-    & df["interest"].eq(0)
-)
+    debt_free_mask = df["interest"].notna() & df["interest"].eq(0)
 
     df.loc[
         debt_free_mask,
@@ -182,17 +182,11 @@ def load_screener_dataframe(db_path=DB_PATH):
 
 
 def _apply_min_filter(df, column, threshold):
-    return df[
-        df[column].notna()
-        & (df[column] >= threshold)
-    ]
+    return df[df[column].notna() & (df[column] >= threshold)]
 
 
 def _apply_max_filter(df, column, threshold):
-    return df[
-        df[column].notna()
-        & (df[column] <= threshold)
-    ]
+    return df[df[column].notna() & (df[column] <= threshold)]
 
 
 def _apply_equal_filter(df, column, threshold):
@@ -212,12 +206,11 @@ def apply_filter(
     threshold,
     config,
 ):
+    """Apply filter."""
     metric_config = config["metrics"].get(metric_name)
 
     if metric_config is None:
-        raise ValueError(
-            f"Unknown screener metric: {metric_name}"
-        )
+        raise ValueError(f"Unknown screener metric: {metric_name}")
 
     column = metric_config["column"]
     operator = metric_config["operator"]
@@ -230,17 +223,10 @@ def apply_filter(
     ):
         column = "interest_coverage_effective"
 
-    if (
-        metric_config.get("skip_financials", False)
-        and operator == "max"
-    ):
-        financials = working_df[
-            working_df["is_financial"]
-        ]
+    if metric_config.get("skip_financials", False) and operator == "max":
+        financials = working_df[working_df["is_financial"]]
 
-        non_financials = working_df[
-            ~working_df["is_financial"]
-        ]
+        non_financials = working_df[~working_df["is_financial"]]
 
         non_financials = _apply_max_filter(
             non_financials,
@@ -274,9 +260,7 @@ def apply_filter(
             threshold,
         )
 
-    raise ValueError(
-        f"Unsupported operator: {operator}"
-    )
+    raise ValueError(f"Unsupported operator: {operator}")
 
 
 def apply_filters(
@@ -284,6 +268,7 @@ def apply_filters(
     filters,
     config=None,
 ):
+    """Apply filters."""
     if config is None:
         config = load_config()
 
@@ -316,6 +301,7 @@ def run_screener(
     filters,
     db_path=DB_PATH,
 ):
+    """Run screener."""
     config = load_config()
     df = load_screener_dataframe(db_path)
 
@@ -337,6 +323,7 @@ def compare_series(
     value,
     comparison,
 ):
+    """Compare series."""
     valid = series.notna()
 
     if comparison == "gt":
@@ -352,24 +339,20 @@ def compare_series(
         return valid & (series <= value)
 
     if comparison == "eq":
-        return (
-            valid
-            & np.isclose(
-                series,
-                value,
-                atol=1e-9,
-            )
+        return valid & np.isclose(
+            series,
+            value,
+            atol=1e-9,
         )
 
-    raise ValueError(
-        f"Unsupported comparison: {comparison}"
-    )
+    raise ValueError(f"Unsupported comparison: {comparison}")
 
 
 def get_metric_column(
     metric_name,
     config,
 ):
+    """Return metric column."""
     if metric_name in config["metrics"]:
         metric_cfg = config["metrics"][metric_name]
 
@@ -382,13 +365,9 @@ def get_metric_column(
         return metric_cfg["column"]
 
     if metric_name in PRESET_EXTRA_COLUMNS:
-        return PRESET_EXTRA_COLUMNS[
-            metric_name
-        ]
+        return PRESET_EXTRA_COLUMNS[metric_name]
 
-    raise ValueError(
-        f"Unknown preset metric: {metric_name}"
-    )
+    raise ValueError(f"Unknown preset metric: {metric_name}")
 
 
 def apply_preset_condition(
@@ -397,6 +376,7 @@ def apply_preset_condition(
     rule,
     config,
 ):
+    """Apply preset condition."""
     column = get_metric_column(
         metric_name,
         config,
@@ -405,10 +385,7 @@ def apply_preset_condition(
     value = rule["value"]
     comparison = rule["comparison"]
 
-    if (
-        metric_name == "debt_to_equity"
-        and comparison in {"lt", "le"}
-    ):
+    if metric_name == "debt_to_equity" and comparison in {"lt", "le"}:
         financial_mask = df["is_financial"]
 
         normal_mask = compare_series(
@@ -417,9 +394,7 @@ def apply_preset_condition(
             comparison,
         )
 
-        return df[
-            financial_mask | normal_mask
-        ].copy()
+        return df[financial_mask | normal_mask].copy()
 
     mask = compare_series(
         df[column],
@@ -430,10 +405,10 @@ def apply_preset_condition(
     return df[mask].copy()
 
 
-
 def load_debt_to_equity_history(
     db_path=DB_PATH,
 ):
+    """Load debt to equity history."""
     with sqlite3.connect(db_path) as conn:
         history = pd.read_sql_query(
             """
@@ -457,13 +432,9 @@ def load_debt_to_equity_history(
 
     rows = []
 
-    for company_id, group in history.groupby(
-        "company_id"
-    ):
+    for company_id, group in history.groupby("company_id"):
         group = (
-            group[
-                group["period"].notna()
-            ]
+            group[group["period"].notna()]
             .sort_values(
                 "period",
                 ascending=False,
@@ -472,8 +443,7 @@ def load_debt_to_equity_history(
         )
 
         usable = group[
-            group["return_on_equity_pct"].notna()
-            & group["debt_to_equity"].notna()
+            group["return_on_equity_pct"].notna() & group["debt_to_equity"].notna()
         ]
 
         if usable.empty:
@@ -491,14 +461,10 @@ def load_debt_to_equity_history(
 
         latest = usable.iloc[0]
 
-        target_period = (
-            latest["period"]
-            - pd.DateOffset(years=1)
-        )
+        target_period = latest["period"] - pd.DateOffset(years=1)
 
         previous = group[
-            group["period"].eq(target_period)
-            & group["debt_to_equity"].notna()
+            group["period"].eq(target_period) & group["debt_to_equity"].notna()
         ]
 
         if previous.empty:
@@ -526,21 +492,19 @@ def load_debt_to_equity_history(
                 "previous_de_year": previous["year"],
                 "latest_de": latest_de,
                 "previous_de": previous_de,
-                "de_declining_yoy": bool(
-                    latest_de < previous_de
-                ),
+                "de_declining_yoy": bool(latest_de < previous_de),
             }
         )
 
     return pd.DataFrame(rows)
 
+
 def apply_turnaround_special_rule(
     df,
     db_path=DB_PATH,
 ):
-    de_history = load_debt_to_equity_history(
-        db_path
-    )
+    """Apply turnaround special rule."""
+    de_history = load_debt_to_equity_history(db_path)
 
     result = df.merge(
         de_history,
@@ -548,34 +512,25 @@ def apply_turnaround_special_rule(
         how="left",
     )
 
-    result["de_declining_yoy"] = (
-        result["de_declining_yoy"]
-        .fillna(False)
-        .astype(bool)
-    )
+    result["de_declining_yoy"] = result["de_declining_yoy"].fillna(False).astype(bool)
 
-    return result[
-        result["de_declining_yoy"]
-    ].copy()
+    return result[result["de_declining_yoy"]].copy()
 
 
 def run_preset(
     preset_name,
     db_path=DB_PATH,
 ):
+    """Run preset."""
     config = load_config()
     presets = config.get("presets", {})
 
     if preset_name not in presets:
-        raise ValueError(
-            f"Unknown preset: {preset_name}"
-        )
+        raise ValueError(f"Unknown preset: {preset_name}")
 
     preset = presets[preset_name]
 
-    df = load_screener_dataframe(
-        db_path
-    )
+    df = load_screener_dataframe(db_path)
 
     result = df.copy()
 
@@ -624,6 +579,7 @@ def run_preset(
 def run_all_presets(
     db_path=DB_PATH,
 ):
+    """Run all presets."""
     config = load_config()
 
     results = {}
@@ -638,6 +594,7 @@ def run_all_presets(
 
 
 def preview_all_presets():
+    """Preview all presets."""
     config = load_config()
     results = run_all_presets()
 
@@ -649,9 +606,7 @@ def preview_all_presets():
     total_pass = 0
 
     for preset_name, df in results.items():
-        label = config["presets"][
-            preset_name
-        ]["label"]
+        label = config["presets"][preset_name]["label"]
 
         count = len(df)
 
@@ -660,11 +615,7 @@ def preview_all_presets():
         if passed:
             total_pass += 1
 
-        status = (
-            "PASS"
-            if passed
-            else "REVIEW"
-        )
+        status = "PASS" if passed else "REVIEW"
 
         print()
         print(label)
@@ -683,25 +634,14 @@ def preview_all_presets():
                 "composite_quality_score",
             ]
 
-            existing = [
-                col
-                for col in columns
-                if col in df.columns
-            ]
+            existing = [col for col in columns if col in df.columns]
 
-            print(
-                df[existing]
-                .head(5)
-                .to_string(index=False)
-            )
+            print(df[existing].head(5).to_string(index=False))
 
     print()
     print("=" * 80)
 
-    print(
-        f"Presets within 5-50 range: "
-        f"{total_pass}/6"
-    )
+    print(f"Presets within 5-50 range: " f"{total_pass}/6")
 
     print("=" * 80)
 

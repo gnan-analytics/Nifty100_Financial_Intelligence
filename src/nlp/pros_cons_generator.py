@@ -1,11 +1,10 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = PROJECT_ROOT / "db" / "nifty100.db"
@@ -47,6 +46,7 @@ CON_TEXT = {
 
 
 def clamp_confidence(value: float) -> float:
+    """Clamp confidence."""
     return round(float(np.clip(value, 61.0, 100.0)), 1)
 
 
@@ -75,6 +75,7 @@ def annual_rows(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def latest_annual(df: pd.DataFrame) -> pd.Series | None:
+    """Return the latest annual financial row."""
     result = annual_rows(df)
 
     if result.empty:
@@ -87,6 +88,7 @@ def numeric_series(
     df: pd.DataFrame,
     column: str,
 ) -> pd.Series:
+    """Return values as a numeric series."""
     result = annual_rows(df)
 
     if result.empty or column not in result.columns:
@@ -103,6 +105,7 @@ def last_n(
     column: str,
     n: int,
 ) -> list[float]:
+    """Handle last n."""
     values = numeric_series(df, column)
 
     if len(values) < n:
@@ -112,26 +115,21 @@ def last_n(
 
 
 def strictly_increasing(values: list[float]) -> bool:
-    return (
-        len(values) >= 2
-        and all(
-            values[i] > values[i - 1]
-            for i in range(1, len(values))
-        )
+    """Return whether values are strictly increasing."""
+    return len(values) >= 2 and all(
+        values[i] > values[i - 1] for i in range(1, len(values))
     )
 
 
 def strictly_decreasing(values: list[float]) -> bool:
-    return (
-        len(values) >= 2
-        and all(
-            values[i] < values[i - 1]
-            for i in range(1, len(values))
-        )
+    """Return whether values are strictly decreasing."""
+    return len(values) >= 2 and all(
+        values[i] < values[i - 1] for i in range(1, len(values))
     )
 
 
 def load_data() -> dict[str, pd.DataFrame]:
+    """Load data."""
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database not found: {DB_PATH}")
 
@@ -177,23 +175,18 @@ def load_data() -> dict[str, pd.DataFrame]:
     ]:
         if "company_id" in data[key].columns:
             data[key]["company_id"] = (
-                data[key]["company_id"]
-                .astype(str)
-                .str.strip()
-                .str.upper()
+                data[key]["company_id"].astype(str).str.strip().str.upper()
             )
 
     data["companies"]["id"] = (
-        data["companies"]["id"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
+        data["companies"]["id"].astype(str).str.strip().str.upper()
     )
 
     return data
 
 
 def latest_market_row(df: pd.DataFrame) -> pd.Series | None:
+    """Handle latest market row."""
     if df.empty:
         return None
 
@@ -218,6 +211,7 @@ def add_signal(
     text: str,
     confidence: float,
 ) -> None:
+    """Add signal."""
     confidence = clamp_confidence(confidence)
 
     if confidence <= MIN_CONFIDENCE:
@@ -238,32 +232,20 @@ def evaluate_company(
     ticker: str,
     data: dict[str, pd.DataFrame],
 ) -> list[dict]:
-
+    """Evaluate company."""
     rows: list[dict] = []
 
-    ratios = data["ratios"][
-        data["ratios"]["company_id"] == ticker
-    ]
+    ratios = data["ratios"][data["ratios"]["company_id"] == ticker]
 
-    pl = data["pl"][
-        data["pl"]["company_id"] == ticker
-    ]
+    pl = data["pl"][data["pl"]["company_id"] == ticker]
 
-    bs = data["bs"][
-        data["bs"]["company_id"] == ticker
-    ]
+    bs = data["bs"][data["bs"]["company_id"] == ticker]
 
-    cf = data["cf"][
-        data["cf"]["company_id"] == ticker
-    ]
+    data["cf"][data["cf"]["company_id"] == ticker]
 
-    market = data["market"][
-        data["market"]["company_id"] == ticker
-    ]
+    market = data["market"][data["market"]["company_id"] == ticker]
 
-    sector_rows = data["sectors"][
-        data["sectors"]["company_id"] == ticker
-    ]
+    sector_rows = data["sectors"][data["sectors"]["company_id"] == ticker]
 
     sector = ""
 
@@ -279,7 +261,7 @@ def evaluate_company(
 
     latest_ratio = latest_annual(ratios)
     latest_pl = latest_annual(pl)
-    latest_bs = latest_annual(bs)
+
     latest_market = latest_market_row(market)
 
     # =========================================================
@@ -291,10 +273,7 @@ def evaluate_company(
         3,
     )
 
-    if (
-        len(roe3) == 3
-        and all(x > 20 for x in roe3)
-    ):
+    if len(roe3) == 3 and all(x > 20 for x in roe3):
         avg_roe = np.mean(roe3)
 
         add_signal(
@@ -315,10 +294,7 @@ def evaluate_company(
         5,
     )
 
-    if (
-        len(fcf5) == 5
-        and all(x > 0 for x in fcf5)
-    ):
+    if len(fcf5) == 5 and all(x > 0 for x in fcf5):
         add_signal(
             rows,
             ticker,
@@ -334,80 +310,52 @@ def evaluate_company(
     if latest_ratio is not None:
 
         de = pd.to_numeric(
-            pd.Series(
-                [latest_ratio.get("debt_to_equity")]
-            ),
+            pd.Series([latest_ratio.get("debt_to_equity")]),
             errors="coerce",
         ).iloc[0]
 
-        roe = pd.to_numeric(
-            pd.Series(
-                [latest_ratio.get("return_on_equity_pct")]
-            ),
+        pd.to_numeric(
+            pd.Series([latest_ratio.get("return_on_equity_pct")]),
             errors="coerce",
         ).iloc[0]
 
         roce = pd.to_numeric(
-            pd.Series(
-                [
-                    latest_ratio.get(
-                        "return_on_capital_employed_pct"
-                    )
-                ]
-            ),
+            pd.Series([latest_ratio.get("return_on_capital_employed_pct")]),
             errors="coerce",
         ).iloc[0]
 
         opm = pd.to_numeric(
-            pd.Series(
-                [
-                    latest_ratio.get(
-                        "operating_profit_margin_pct"
-                    )
-                ]
-            ),
+            pd.Series([latest_ratio.get("operating_profit_margin_pct")]),
             errors="coerce",
         ).iloc[0]
 
         icr = pd.to_numeric(
-            pd.Series(
-                [latest_ratio.get("interest_coverage")]
-            ),
+            pd.Series([latest_ratio.get("interest_coverage")]),
             errors="coerce",
         ).iloc[0]
 
         fcf = pd.to_numeric(
-            pd.Series(
-                [latest_ratio.get("free_cash_flow_cr")]
-            ),
+            pd.Series([latest_ratio.get("free_cash_flow_cr")]),
             errors="coerce",
         ).iloc[0]
 
         revenue_cagr5 = pd.to_numeric(
-            pd.Series(
-                [latest_ratio.get("revenue_cagr_5yr")]
-            ),
+            pd.Series([latest_ratio.get("revenue_cagr_5yr")]),
             errors="coerce",
         ).iloc[0]
 
         pat_cagr5 = pd.to_numeric(
-            pd.Series(
-                [latest_ratio.get("pat_cagr_5yr")]
-            ),
+            pd.Series([latest_ratio.get("pat_cagr_5yr")]),
             errors="coerce",
         ).iloc[0]
 
         eps_cagr5 = pd.to_numeric(
-            pd.Series(
-                [latest_ratio.get("eps_cagr_5yr")]
-            ),
+            pd.Series([latest_ratio.get("eps_cagr_5yr")]),
             errors="coerce",
         ).iloc[0]
 
         net_debt = pd.to_numeric(
-            pd.Series(
-                [latest_ratio.get("net_debt_cr")]
-            ),
+            pd.Series([latest_ratio.get("net_debt_cr")]),
             errors="coerce",
         ).iloc[0]
 
@@ -423,17 +371,15 @@ def evaluate_company(
             )
 
         # PRO 04
-        if (
-            pd.notna(revenue_cagr5)
-            and revenue_cagr5 > 15
-        ):
+        if pd.notna(revenue_cagr5) and revenue_cagr5 > 15:
             add_signal(
                 rows,
                 ticker,
                 "pro",
                 "PRO_04",
                 PRO_TEXT["PRO_04"],
-                70 + min(
+                70
+                + min(
                     (revenue_cagr5 - 15) * 2,
                     30,
                 ),
@@ -447,40 +393,34 @@ def evaluate_company(
                 "pro",
                 "PRO_05",
                 PRO_TEXT["PRO_05"],
-                70 + min(
+                70
+                + min(
                     (opm - 25) * 1.5,
                     30,
                 ),
             )
 
         # PRO 06
-        if (
-            pd.notna(pat_cagr5)
-            and pat_cagr5 > 20
-        ):
+        if pd.notna(pat_cagr5) and pat_cagr5 > 20:
             add_signal(
                 rows,
                 ticker,
                 "pro",
                 "PRO_06",
                 PRO_TEXT["PRO_06"],
-                70 + min(
+                70
+                + min(
                     (pat_cagr5 - 20) * 1.5,
                     30,
                 ),
             )
 
         # PRO 07
-        if (
-            (pd.notna(de) and abs(de) < 1e-9)
-            or
-            (pd.notna(icr) and icr > 10)
-        ):
-            confidence = 95 if (
-                pd.notna(de)
-                and abs(de) < 1e-9
-            ) else (
-                70 + min((icr - 10) * 1.0, 30)
+        if (pd.notna(de) and abs(de) < 1e-9) or (pd.notna(icr) and icr > 10):
+            confidence = (
+                95
+                if (pd.notna(de) and abs(de) < 1e-9)
+                else (70 + min((icr - 10) * 1.0, 30))
             )
 
             add_signal(
@@ -493,17 +433,15 @@ def evaluate_company(
             )
 
         # PRO 09
-        if (
-            pd.notna(eps_cagr5)
-            and eps_cagr5 > 15
-        ):
+        if pd.notna(eps_cagr5) and eps_cagr5 > 15:
             add_signal(
                 rows,
                 ticker,
                 "pro",
                 "PRO_09",
                 PRO_TEXT["PRO_09"],
-                70 + min(
+                70
+                + min(
                     (eps_cagr5 - 15) * 2,
                     30,
                 ),
@@ -528,71 +466,60 @@ def evaluate_company(
             )
 
         # CON 01
-        if (
-            not is_financial
-            and pd.notna(de)
-            and de > 2.0
-        ):
+        if not is_financial and pd.notna(de) and de > 2.0:
             add_signal(
                 rows,
                 ticker,
                 "con",
                 "CON_01",
-                CON_TEXT["CON_01"].format(
-                    value=de
-                ),
-                70 + min(
+                CON_TEXT["CON_01"].format(value=de),
+                70
+                + min(
                     (de - 2) * 10,
                     30,
                 ),
             )
 
         # CON 06
-        if (
-            pd.notna(icr)
-            and icr < 1.5
-        ):
+        if pd.notna(icr) and icr < 1.5:
             add_signal(
                 rows,
                 ticker,
                 "con",
                 "CON_06",
                 CON_TEXT["CON_06"],
-                75 + min(
+                75
+                + min(
                     (1.5 - icr) * 15,
                     25,
                 ),
             )
 
         # CON 10
-        if (
-            pd.notna(roce)
-            and roce < 10
-        ):
+        if pd.notna(roce) and roce < 10:
             add_signal(
                 rows,
                 ticker,
                 "con",
                 "CON_10",
                 CON_TEXT["CON_10"],
-                65 + min(
+                65
+                + min(
                     (10 - roce) * 3,
                     35,
                 ),
             )
 
         # CON 12
-        if (
-            pd.notna(revenue_cagr5)
-            and revenue_cagr5 < 5
-        ):
+        if pd.notna(revenue_cagr5) and revenue_cagr5 < 5:
             add_signal(
                 rows,
                 ticker,
                 "con",
                 "CON_12",
                 CON_TEXT["CON_12"],
-                70 + min(
+                70
+                + min(
                     (5 - revenue_cagr5) * 3,
                     30,
                 ),
@@ -601,34 +528,21 @@ def evaluate_company(
     # =========================================================
     # PRO 08 — Dividend yield >2 and FCF positive
     # =========================================================
-    if (
-        latest_market is not None
-        and latest_ratio is not None
-    ):
+    if latest_market is not None and latest_ratio is not None:
         div_yield = pd.to_numeric(
-            pd.Series(
-                [
-                    latest_market.get(
-                        "dividend_yield_pct"
-                    )
-                ]
-            ),
+            pd.Series([latest_market.get("dividend_yield_pct")]),
             errors="coerce",
         ).iloc[0]
 
-        if (
-            pd.notna(div_yield)
-            and div_yield > 2
-            and pd.notna(fcf)
-            and fcf > 0
-        ):
+        if pd.notna(div_yield) and div_yield > 2 and pd.notna(fcf) and fcf > 0:
             add_signal(
                 rows,
                 ticker,
                 "pro",
                 "PRO_08",
                 PRO_TEXT["PRO_08"],
-                70 + min(
+                70
+                + min(
                     (div_yield - 2) * 8,
                     30,
                 ),
@@ -643,13 +557,8 @@ def evaluate_company(
         3,
     )
 
-    if (
-        len(roe_trend) == 3
-        and strictly_increasing(roe_trend)
-    ):
-        improvement = (
-            roe_trend[-1] - roe_trend[0]
-        )
+    if len(roe_trend) == 3 and strictly_increasing(roe_trend):
+        improvement = roe_trend[-1] - roe_trend[0]
 
         add_signal(
             rows,
@@ -657,7 +566,8 @@ def evaluate_company(
             "pro",
             "PRO_10",
             PRO_TEXT["PRO_10"],
-            65 + min(
+            65
+            + min(
                 improvement * 4,
                 35,
             ),
@@ -702,10 +612,7 @@ def evaluate_company(
         3,
     )
 
-    if (
-        len(fcf3) == 3
-        and all(x < 0 for x in fcf3)
-    ):
+    if len(fcf3) == 3 and all(x < 0 for x in fcf3):
         add_signal(
             rows,
             ticker,
@@ -724,10 +631,7 @@ def evaluate_company(
         3,
     )
 
-    if (
-        len(opm3) == 3
-        and strictly_decreasing(opm3)
-    ):
+    if len(opm3) == 3 and strictly_decreasing(opm3):
         decline = opm3[0] - opm3[-1]
 
         add_signal(
@@ -736,7 +640,8 @@ def evaluate_company(
             "con",
             "CON_03",
             CON_TEXT["CON_03"],
-            65 + min(
+            65
+            + min(
                 decline * 4,
                 35,
             ),
@@ -747,23 +652,16 @@ def evaluate_company(
     # =========================================================
     if latest_pl is not None:
         net_profit = pd.to_numeric(
-            pd.Series(
-                [latest_pl.get("net_profit")]
-            ),
+            pd.Series([latest_pl.get("net_profit")]),
             errors="coerce",
         ).iloc[0]
 
         dividend_payout = pd.to_numeric(
-            pd.Series(
-                [latest_pl.get("dividend_payout")]
-            ),
+            pd.Series([latest_pl.get("dividend_payout")]),
             errors="coerce",
         ).iloc[0]
 
-        if (
-            pd.notna(net_profit)
-            and net_profit < 0
-        ):
+        if pd.notna(net_profit) and net_profit < 0:
             add_signal(
                 rows,
                 ticker,
@@ -774,17 +672,15 @@ def evaluate_company(
             )
 
         # CON 07
-        if (
-            pd.notna(dividend_payout)
-            and dividend_payout > 100
-        ):
+        if pd.notna(dividend_payout) and dividend_payout > 100:
             add_signal(
                 rows,
                 ticker,
                 "con",
                 "CON_07",
                 CON_TEXT["CON_07"],
-                80 + min(
+                80
+                + min(
                     (dividend_payout - 100) / 5,
                     20,
                 ),
@@ -799,17 +695,10 @@ def evaluate_company(
         3,
     )
 
-    if (
-        len(sales3) == 3
-        and sales3[-1] < sales3[-2] < sales3[-3]
-    ):
+    if len(sales3) == 3 and sales3[-1] < sales3[-2] < sales3[-3]:
         decline_pct = (
-            (
-                sales3[0] - sales3[-1]
-            )
-            / abs(sales3[0])
-            * 100
-        ) if sales3[0] != 0 else 0
+            ((sales3[0] - sales3[-1]) / abs(sales3[0]) * 100) if sales3[0] != 0 else 0
+        )
 
         add_signal(
             rows,
@@ -817,7 +706,8 @@ def evaluate_company(
             "con",
             "CON_05",
             CON_TEXT["CON_05"],
-            70 + min(
+            70
+            + min(
                 max(decline_pct, 0),
                 30,
             ),
@@ -832,10 +722,7 @@ def evaluate_company(
         3,
     )
 
-    if (
-        len(de3) == 3
-        and strictly_increasing(de3)
-    ):
+    if len(de3) == 3 and strictly_increasing(de3):
         rise = de3[-1] - de3[0]
 
         add_signal(
@@ -844,7 +731,8 @@ def evaluate_company(
             "con",
             "CON_08",
             CON_TEXT["CON_08"],
-            65 + min(
+            65
+            + min(
                 rise * 15,
                 35,
             ),
@@ -859,10 +747,7 @@ def evaluate_company(
         3,
     )
 
-    if (
-        len(eps3) == 3
-        and strictly_decreasing(eps3)
-    ):
+    if len(eps3) == 3 and strictly_decreasing(eps3):
         add_signal(
             rows,
             ticker,
@@ -878,29 +763,14 @@ def evaluate_company(
     # EBITDA estimated from:
     # enterprise_value / EV-EBITDA
     # =========================================================
-    if (
-        latest_market is not None
-        and latest_ratio is not None
-    ):
+    if latest_market is not None and latest_ratio is not None:
         ev = pd.to_numeric(
-            pd.Series(
-                [
-                    latest_market.get(
-                        "enterprise_value_crore"
-                    )
-                ]
-            ),
+            pd.Series([latest_market.get("enterprise_value_crore")]),
             errors="coerce",
         ).iloc[0]
 
         ev_ebitda = pd.to_numeric(
-            pd.Series(
-                [
-                    latest_market.get(
-                        "ev_ebitda"
-                    )
-                ]
-            ),
+            pd.Series([latest_market.get("ev_ebitda")]),
             errors="coerce",
         ).iloc[0]
 
@@ -911,15 +781,10 @@ def evaluate_company(
             and ev > 0
             and ev_ebitda > 0
         ):
-            estimated_ebitda = (
-                ev / ev_ebitda
-            )
+            estimated_ebitda = ev / ev_ebitda
 
             if estimated_ebitda > 0:
-                net_debt_ebitda = (
-                    net_debt
-                    / estimated_ebitda
-                )
+                net_debt_ebitda = net_debt / estimated_ebitda
 
                 if net_debt_ebitda > 3:
                     add_signal(
@@ -928,11 +793,9 @@ def evaluate_company(
                         "con",
                         "CON_11",
                         CON_TEXT["CON_11"],
-                        75 + min(
-                            (
-                                net_debt_ebitda
-                                - 3
-                            ) * 8,
+                        75
+                        + min(
+                            (net_debt_ebitda - 3) * 8,
                             25,
                         ),
                     )
@@ -941,14 +804,10 @@ def evaluate_company(
 
 
 def generate() -> pd.DataFrame:
+    """Handle generate."""
     data = load_data()
 
-    tickers = sorted(
-        data["companies"]["id"]
-        .dropna()
-        .unique()
-        .tolist()
-    )
+    tickers = sorted(data["companies"]["id"].dropna().unique().tolist())
 
     rows: list[dict] = []
 
@@ -973,8 +832,7 @@ def generate() -> pd.DataFrame:
 
     if not output.empty:
         output = (
-            output
-            .drop_duplicates(
+            output.drop_duplicates(
                 subset=[
                     "company_id",
                     "type",
@@ -1002,15 +860,10 @@ def generate() -> pd.DataFrame:
 def validate_coverage(
     output: pd.DataFrame,
 ) -> tuple[list[str], list[str]]:
-
+    """Validate coverage."""
     data = load_data()
 
-    companies = set(
-        data["companies"]["id"]
-        .dropna()
-        .astype(str)
-        .str.upper()
-    )
+    companies = set(data["companies"]["id"].dropna().astype(str).str.upper())
 
     pros = set(
         output.loc[
@@ -1026,18 +879,15 @@ def validate_coverage(
         ]
     )
 
-    missing_pro = sorted(
-        companies - pros
-    )
+    missing_pro = sorted(companies - pros)
 
-    missing_con = sorted(
-        companies - cons
-    )
+    missing_con = sorted(companies - cons)
 
     return missing_pro, missing_con
 
 
 def main() -> None:
+    """Run the module entry point."""
     print("=" * 80)
     print("SPRINT 5 — DAY 30 AUTO PROS / CONS GENERATOR")
     print("=" * 80)
@@ -1054,27 +904,16 @@ def main() -> None:
         index=False,
     )
 
-    missing_pro, missing_con = (
-        validate_coverage(output)
-    )
+    missing_pro, missing_con = validate_coverage(output)
 
     print(f"\nGenerated signals: {len(output)}")
 
     if not output.empty:
         print("\nTYPE COUNTS:")
-        print(
-            output["type"]
-            .value_counts()
-            .to_string()
-        )
+        print(output["type"].value_counts().to_string())
 
         print("\nRULE COUNTS:")
-        print(
-            output["rule_id"]
-            .value_counts()
-            .sort_index()
-            .to_string()
-        )
+        print(output["rule_id"].value_counts().sort_index().to_string())
 
         print(
             "\nCompanies with at least one PRO:",
@@ -1092,33 +931,15 @@ def main() -> None:
             ].nunique(),
         )
 
-    print(
-        f"\nCompanies missing PRO: "
-        f"{len(missing_pro)}"
-    )
-    print(
-        ", ".join(missing_pro)
-        if missing_pro
-        else "None"
-    )
+    print(f"\nCompanies missing PRO: " f"{len(missing_pro)}")
+    print(", ".join(missing_pro) if missing_pro else "None")
 
-    print(
-        f"\nCompanies missing CON: "
-        f"{len(missing_con)}"
-    )
-    print(
-        ", ".join(missing_con)
-        if missing_con
-        else "None"
-    )
+    print(f"\nCompanies missing CON: " f"{len(missing_con)}")
+    print(", ".join(missing_con) if missing_con else "None")
 
-    print(
-        f"\nOutput: {OUTPUT_PATH}"
-    )
+    print(f"\nOutput: {OUTPUT_PATH}")
 
-    print(
-        "\nDAY 30 RULE ENGINE: PASS"
-    )
+    print("\nDAY 30 RULE ENGINE: PASS")
 
 
 if __name__ == "__main__":

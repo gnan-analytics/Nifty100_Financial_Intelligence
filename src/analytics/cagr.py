@@ -1,6 +1,6 @@
 import math
-import pandas as pd
 
+import pandas as pd
 
 # =========================================================
 # CAGR FLAGS
@@ -17,6 +17,7 @@ INSUFFICIENT = "INSUFFICIENT"
 # =========================================================
 # CORE CAGR CALCULATOR
 # =========================================================
+
 
 def calculate_cagr(
     start_value,
@@ -71,28 +72,19 @@ def calculate_cagr(
             "flag": ZERO_BASE,
         }
 
-    if (
-        start_value > 0
-        and end_value < 0
-    ):
+    if start_value > 0 and end_value < 0:
         return {
             "value": None,
             "flag": DECLINE_TO_LOSS,
         }
 
-    if (
-        start_value < 0
-        and end_value > 0
-    ):
+    if start_value < 0 and end_value > 0:
         return {
             "value": None,
             "flag": TURNAROUND,
         }
 
-    if (
-        start_value < 0
-        and end_value < 0
-    ):
+    if start_value < 0 and end_value < 0:
         return {
             "value": None,
             "flag": BOTH_NEGATIVE,
@@ -104,10 +96,7 @@ def calculate_cagr(
             "flag": NORMAL,
         }
 
-    ratio = (
-        end_value
-        / start_value
-    )
+    ratio = end_value / start_value
 
     cagr = (
         math.pow(
@@ -126,6 +115,7 @@ def calculate_cagr(
 # =========================================================
 # SERIES CAGR
 # =========================================================
+
 
 def calculate_series_cagr(
     values,
@@ -147,22 +137,15 @@ def calculate_series_cagr(
 
     clean_values = list(values)
 
-    required_observations = (
-        window_years + 1
-    )
+    required_observations = window_years + 1
 
-    if (
-        len(clean_values)
-        < required_observations
-    ):
+    if len(clean_values) < required_observations:
         return {
             "value": None,
             "flag": INSUFFICIENT,
         }
 
-    start_value = clean_values[
-        -required_observations
-    ]
+    start_value = clean_values[-required_observations]
 
     end_value = clean_values[-1]
 
@@ -177,10 +160,12 @@ def calculate_series_cagr(
 # REVENUE CAGR
 # =========================================================
 
+
 def calculate_revenue_cagr(
     revenue_values,
     window_years,
 ):
+    """Calculate revenue cagr."""
     return calculate_series_cagr(
         revenue_values,
         window_years,
@@ -191,10 +176,12 @@ def calculate_revenue_cagr(
 # PAT CAGR
 # =========================================================
 
+
 def calculate_pat_cagr(
     pat_values,
     window_years,
 ):
+    """Calculate pat cagr."""
     return calculate_series_cagr(
         pat_values,
         window_years,
@@ -205,10 +192,12 @@ def calculate_pat_cagr(
 # EPS CAGR
 # =========================================================
 
+
 def calculate_eps_cagr(
     eps_values,
     window_years,
 ):
+    """Calculate eps cagr."""
     return calculate_series_cagr(
         eps_values,
         window_years,
@@ -218,6 +207,7 @@ def calculate_eps_cagr(
 # =========================================================
 # ALL GROWTH METRICS
 # =========================================================
+
 
 def calculate_growth_metrics(
     revenue_values,
@@ -236,11 +226,9 @@ def calculate_growth_metrics(
         5,
         10,
     ):
-        revenue = (
-            calculate_revenue_cagr(
-                revenue_values,
-                years,
-            )
+        revenue = calculate_revenue_cagr(
+            revenue_values,
+            years,
         )
 
         pat = calculate_pat_cagr(
@@ -253,28 +241,16 @@ def calculate_growth_metrics(
             years,
         )
 
-        results[
-            f"revenue_cagr_{years}yr"
-        ] = revenue["value"]
+        results[f"revenue_cagr_{years}yr"] = revenue["value"]
 
-        results[
-            f"revenue_cagr_{years}yr_flag"
-        ] = revenue["flag"]
+        results[f"revenue_cagr_{years}yr_flag"] = revenue["flag"]
 
-        results[
-            f"pat_cagr_{years}yr"
-        ] = pat["value"]
+        results[f"pat_cagr_{years}yr"] = pat["value"]
 
-        results[
-            f"pat_cagr_{years}yr_flag"
-        ] = pat["flag"]
+        results[f"pat_cagr_{years}yr_flag"] = pat["flag"]
 
-        results[
-            f"eps_cagr_{years}yr"
-        ] = eps["value"]
+        results[f"eps_cagr_{years}yr"] = eps["value"]
 
-        results[
-            f"eps_cagr_{years}yr_flag"
-        ] = eps["flag"]
+        results[f"eps_cagr_{years}yr_flag"] = eps["flag"]
 
     return results

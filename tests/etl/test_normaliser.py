@@ -52,6 +52,7 @@ def test_normalize_ticker(raw, expected):
 def test_normalize_year(raw, expected):
     assert normalize_year(raw) == expected
 
+
 @pytest.mark.parametrize(
     "raw",
     [

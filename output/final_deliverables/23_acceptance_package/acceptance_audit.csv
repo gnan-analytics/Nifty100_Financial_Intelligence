@@ -1,0 +1,21 @@
+AC,Gate,Status,Evidence
+AC01,Exactly 92 companies loaded,PASS,companies table rows = 92
+AC02,"At least 90% have >=10 years P&L, BS and CF",PASS,84/92 = 91.30%
+AC03,Zero SQLite foreign-key violations,PASS,foreign_key_check violations = 0
+AC04,"At least 1,100 financial-ratio rows",PASS,financial_ratios rows = 1155
+AC05,Revenue CAGR cross-validation within 0.1%,FAIL,Maximum absolute divergence = 10.216500 percentage points; rows checked = 24
+AC06,ROE agrees with source within 5% for 5 companies,PASS,ICICIBANK: diff=0.81; BANKBARODA: diff=0.94; INDUSINDBK: diff=0.95; KOTAKBANK: diff=1.09; CANBK: diff=1.18
+AC07,Quality screener returns 10-50 companies,PASS,Sheet=Quality Compounder; rows=22
+AC08,Company profile response under 3 seconds,PASS,TCS status=200; elapsed=0.0173s
+AC09,Screener CSV export is implemented,PASS,download_button=True; CSV generation=True
+AC10,Five tearsheets have no visual overflow,PASS,Manual PDF visual QA completed previously; representative PDFs present=5/5.
+AC11,API health endpoint returns 200,PASS,"HTTP status=200; body={'status': 'ok', 'version': '1.0.0', 'uptime_seconds': 0.42, 'db_row_counts': {'companies': 92, 'profitandloss': 1070, 'balancesheet': 1140, 'cashflow': 1056, 'analysis': 16, 'documents': 1457, 'prosandcons': 14, 'sectors': 92, 'stock_prices': 5520, 'market_cap': 552}}"
+AC12,TCS has at least 10 years of ratio history,PASS,HTTP status=200; ratio rows=13
+AC13,API screener output is consistent with screener engine/export,PASS,API status=200; count=49; Day 42 integration test verifies API == run_screener.
+AC14,Peer-percentile outputs cover all 11 peer groups,PASS,"peer_comparison.xlsx sheets=11; ['Automobiles', 'Consumer Finance', 'FMCG', 'IT Services', 'Life Insurance', 'Oil & Gas', 'Pharmaceuticals', 'Power & Utilities', 'Private Banks', 'Public Sector Banks', 'Steel']"
+AC15,All 92 companies have a cluster ID,PASS,unique companies=92; non-null cluster IDs=92
+AC16,All 92 companies have >=1 PRO and >=1 CON,FAIL,PRO coverage=89/92; CON coverage=57/92. Source/rule limitations retained; no signals fabricated.
+AC17,All 92 tearsheets exist and are at least 30 KB,FAIL,PDFs=88/92; >=30KB=88/88. Companies with insufficient annual history were intentionally skipped.
+AC18,At least 60 tests with zero failures,PASS,pytest returncode=0; passed=168
+AC19,validation_failures.csv has required columns,PASS,"columns=['rule_id', 'table', 'severity', 'status', 'message', 'action', 'row_index', 'company_id', 'year', 'field', 'issue']; missing=[]"
+AC20,Analyst Guide is at least 10 pages,PASS,analyst_guide.pdf pages=18

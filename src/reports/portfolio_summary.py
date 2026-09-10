@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import sqlite3
 import math
 
@@ -18,7 +18,6 @@ from reportlab.platypus import (
     TableStyle,
     PageBreak,
 )
-
 
 ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = ROOT / "db" / "nifty100.db"
@@ -70,14 +69,12 @@ KPI_DEFS = [
 
 
 def normalize_id(series):
-    return (
-        series.astype(str)
-        .str.strip()
-        .str.upper()
-    )
+    """Normalize id."""
+    return series.astype(str).str.strip().str.upper()
 
 
 def safe_float(value):
+    """Convert a value to float safely."""
     try:
         if pd.isna(value):
             return np.nan
@@ -87,6 +84,7 @@ def safe_float(value):
 
 
 def fmt_value(value, suffix):
+    """Format value."""
     value = safe_float(value)
 
     if np.isnan(value):
@@ -102,6 +100,7 @@ def fmt_value(value, suffix):
 
 
 def trend_symbol(current, previous):
+    """Handle trend symbol."""
     current = safe_float(current)
     previous = safe_float(previous)
 
@@ -120,6 +119,7 @@ def trend_symbol(current, previous):
 
 
 def trend_display(symbol):
+    """Handle trend display."""
     if symbol == "UP":
         return "UP", GREEN
 
@@ -133,6 +133,7 @@ def trend_display(symbol):
 
 
 def load_data():
+    """Load data."""
     with sqlite3.connect(DB_PATH) as conn:
         companies = pd.read_sql_query(
             """
@@ -163,64 +164,44 @@ def load_data():
             conn,
         )
 
-    companies["id"] = normalize_id(
-        companies["id"]
-    )
+    companies["id"] = normalize_id(companies["id"])
 
-    sectors["company_id"] = normalize_id(
-        sectors["company_id"]
-    )
+    sectors["company_id"] = normalize_id(sectors["company_id"])
 
-    ratios["company_id"] = normalize_id(
-        ratios["company_id"]
-    )
+    ratios["company_id"] = normalize_id(ratios["company_id"])
 
-    ratios["year"] = (
-        ratios["year"]
-        .astype(str)
-        .str.strip()
-    )
+    ratios["year"] = ratios["year"].astype(str).str.strip()
 
     return companies, sectors, ratios
 
 
 def select_ratio_rows(ratios, ticker):
-    rows = ratios[
-        ratios["company_id"] == ticker
-    ].copy()
+    """Select ratio rows."""
+    rows = ratios[ratios["company_id"] == ticker].copy()
 
     if rows.empty:
         return None, None, "NO_RATIO_DATA"
 
     rows = rows.sort_values("year")
 
-    annual = rows[
-        rows["year"].str.endswith("-03")
-    ].copy()
+    annual = rows[rows["year"].str.endswith("-03")].copy()
 
     if not annual.empty:
         current = annual.iloc[-1]
 
-        previous = (
-            annual.iloc[-2]
-            if len(annual) >= 2
-            else None
-        )
+        previous = annual.iloc[-2] if len(annual) >= 2 else None
 
         return current, previous, "MARCH_ANNUAL"
 
     current = rows.iloc[-1]
 
-    previous = (
-        rows.iloc[-2]
-        if len(rows) >= 2
-        else None
-    )
+    previous = rows.iloc[-2] if len(rows) >= 2 else None
 
     return current, previous, "LATEST_AVAILABLE_FALLBACK"
 
 
 def build_styles():
+    """Build styles."""
     base = getSampleStyleSheet()
 
     return {
@@ -288,6 +269,7 @@ def build_styles():
 
 
 def header(ticker, company_name, sector, period, source_mode, s):
+    """Handle header."""
     mode_text = (
         "Annual March data"
         if source_mode == "MARCH_ANNUAL"
@@ -359,6 +341,7 @@ def header(ticker, company_name, sector, period, source_mode, s):
 
 
 def kpi_card(label, value, trend_text, trend_color, s):
+    """Handle kpi card."""
     trend_style = ParagraphStyle(
         f"Trend_{label}",
         parent=s["small"],
@@ -438,20 +421,19 @@ def kpi_card(label, value, trend_text, trend_color, s):
 
 
 def build_kpi_grid(current, previous, s):
+    """Build kpi grid."""
     cards = []
 
     for metric, label, suffix in KPI_DEFS:
         current_value = (
             current[metric]
-            if current is not None
-            and metric in current.index
+            if current is not None and metric in current.index
             else np.nan
         )
 
         previous_value = (
             previous[metric]
-            if previous is not None
-            and metric in previous.index
+            if previous is not None and metric in previous.index
             else np.nan
         )
 
@@ -460,16 +442,12 @@ def build_kpi_grid(current, previous, s):
             previous_value,
         )
 
-        display_symbol, trend_color = trend_display(
-            symbol
-        )
+        display_symbol, trend_color = trend_display(symbol)
 
         if display_symbol == "N/A":
             trend_text = "Trend: N/A"
         else:
-            trend_text = (
-                f"{display_symbol} - {description}"
-            )
+            trend_text = f"{display_symbol} - {description}"
 
         cards.append(
             kpi_card(
@@ -543,6 +521,7 @@ def build_kpi_grid(current, previous, s):
 
 
 def footer(canvas, doc):
+    """Handle footer."""
     canvas.saveState()
 
     canvas.setFont(
@@ -550,9 +529,7 @@ def footer(canvas, doc):
         7,
     )
 
-    canvas.setFillColor(
-        GREY
-    )
+    canvas.setFillColor(GREY)
 
     canvas.drawString(
         15 * mm,
@@ -570,6 +547,7 @@ def footer(canvas, doc):
 
 
 def main():
+    """Run the module entry point."""
     companies, sectors, ratios = load_data()
 
     OUTPUT_DIR.mkdir(
@@ -593,9 +571,7 @@ def main():
     story = []
     fallback_rows = []
 
-    companies = companies.sort_values(
-        "id"
-    ).reset_index(drop=True)
+    companies = companies.sort_values("id").reset_index(drop=True)
 
     print("=" * 90)
     print("SPRINT 5 - DAY 35 PORTFOLIO SUMMARY")
@@ -605,14 +581,10 @@ def main():
         ticker = company["id"]
         company_name = company["company_name"]
 
-        sector_rows = sectors[
-            sectors["company_id"] == ticker
-        ]
+        sector_rows = sectors[sectors["company_id"] == ticker]
 
         sector = (
-            sector_rows.iloc[0]["broad_sector"]
-            if not sector_rows.empty
-            else "Unknown"
+            sector_rows.iloc[0]["broad_sector"] if not sector_rows.empty else "Unknown"
         )
 
         current, previous, source_mode = select_ratio_rows(
@@ -620,11 +592,7 @@ def main():
             ticker,
         )
 
-        period = (
-            current["year"]
-            if current is not None
-            else "N/A"
-        )
+        period = current["year"] if current is not None else "N/A"
 
         if source_mode != "MARCH_ANNUAL":
             fallback_rows.append(
@@ -745,15 +713,10 @@ def main():
             )
 
         if index < len(companies) - 1:
-            story.append(
-                PageBreak()
-            )
+            story.append(PageBreak())
 
         print(
-            f"[{index + 1:02d}/92] "
-            f"{ticker:<12} "
-            f"{period:<8} "
-            f"{source_mode}"
+            f"[{index + 1:02d}/92] " f"{ticker:<12} " f"{period:<8} " f"{source_mode}"
         )
 
     doc.build(
@@ -777,39 +740,23 @@ def main():
         index=False,
     )
 
-    size_mb = (
-        OUTPUT_PATH.stat().st_size
-        / 1024
-        / 1024
-    )
+    size_mb = OUTPUT_PATH.stat().st_size / 1024 / 1024
 
     print("\n" + "=" * 90)
     print("PORTFOLIO SUMMARY")
     print("=" * 90)
 
-    print(
-        f"Companies included : {len(companies)}"
-    )
+    print(f"Companies included : {len(companies)}")
 
-    print(
-        f"Fallback companies : {len(fallback_df)}"
-    )
+    print(f"Fallback companies : {len(fallback_df)}")
 
-    print(
-        f"Output PDF         : {OUTPUT_PATH}"
-    )
+    print(f"Output PDF         : {OUTPUT_PATH}")
 
-    print(
-        f"PDF size           : {size_mb:.2f} MB"
-    )
+    print(f"PDF size           : {size_mb:.2f} MB")
 
-    print(
-        f"Fallback log       : {FALLBACK_LOG}"
-    )
+    print(f"Fallback log       : {FALLBACK_LOG}")
 
-    print(
-        "\nDAY 35 PORTFOLIO GENERATOR: PASS"
-    )
+    print("\nDAY 35 PORTFOLIO GENERATOR: PASS")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-﻿"""Shared FastAPI test client."""
+"""Shared FastAPI test client."""
 
 import pytest
 from fastapi.testclient import TestClient

@@ -1,4 +1,4 @@
-﻿import requests
+import requests
 import streamlit as st
 
 from src.dashboard.utils.db import (
@@ -6,12 +6,9 @@ from src.dashboard.utils.db import (
     get_report_companies,
 )
 
-
 st.title("📚 Annual Reports")
 
-st.caption(
-    "Browse available company annual reports"
-)
+st.caption("Browse available company annual reports")
 
 
 @st.cache_data(
@@ -19,6 +16,7 @@ st.caption(
     show_spinner=False,
 )
 def check_report_url(url):
+    """Check report url."""
     if not isinstance(url, str):
         return "not_found"
 
@@ -27,9 +25,7 @@ def check_report_url(url):
     if not url.startswith(("http://", "https://")):
         return "not_found"
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 Nifty100-Financial-Intelligence"
-    }
+    headers = {"User-Agent": "Mozilla/5.0 Nifty100-Financial-Intelligence"}
 
     try:
         response = requests.head(
@@ -76,12 +72,8 @@ if search.strip():
     term = search.strip().lower()
 
     filtered = filtered[
-        filtered["company_id"]
-        .astype(str)
-        .str.lower()
-        .str.contains(term, regex=False)
-        |
-        filtered["company_name"]
+        filtered["company_id"].astype(str).str.lower().str.contains(term, regex=False)
+        | filtered["company_name"]
         .astype(str)
         .str.lower()
         .str.contains(term, regex=False)
@@ -94,9 +86,7 @@ if filtered.empty:
 filtered = filtered.copy()
 
 filtered["label"] = (
-    filtered["company_id"].astype(str)
-    + " — "
-    + filtered["company_name"].astype(str)
+    filtered["company_id"].astype(str) + " — " + filtered["company_name"].astype(str)
 )
 
 selected = st.selectbox(
@@ -108,9 +98,7 @@ ticker = selected.split(" — ", 1)[0]
 
 documents = get_documents(ticker)
 
-st.subheader(
-    f"Available Reports — {ticker}"
-)
+st.subheader(f"Available Reports — {ticker}")
 
 if documents.empty:
     st.info("No annual reports available.")
@@ -118,11 +106,7 @@ if documents.empty:
 
 documents = documents.copy()
 
-documents["annual_report"] = (
-    documents["annual_report"]
-    .fillna("")
-    .astype(str)
-)
+documents["annual_report"] = documents["annual_report"].fillna("").astype(str)
 
 for _, row in documents.iterrows():
     year = row.get("year", "Unknown Year")
