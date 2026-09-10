@@ -1,4 +1,4 @@
-pandas
+﻿pandas
 numpy
 openpyxl
 xlrd
@@ -6,8 +6,11 @@ sqlalchemy
 python-dotenv
 pytest
 pytest-cov
+pytest-html
 requests
+httpx
 matplotlib
+seaborn
 plotly
 streamlit
 fastapi
@@ -16,5 +19,8 @@ pydantic
 reportlab
 xlsxwriter
 scipy
+scikit-learn
 jinja2
 loguru
+black
+ruff

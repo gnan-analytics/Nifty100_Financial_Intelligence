@@ -1,0 +1,486 @@
+{
+  "info": {
+    "name": "Nifty100 Financial Intelligence API",
+    "description": "Postman collection generated from the FastAPI OpenAPI schema.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Root",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": []
+        },
+        "description": "Return basic API information."
+      },
+      "response": []
+    },
+    {
+      "name": "List Companies",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/companies",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "companies"
+          ],
+          "query": [
+            {
+              "key": "sector",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            },
+            {
+              "key": "market_cap_category",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            },
+            {
+              "key": "search",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            }
+          ]
+        },
+        "description": "Return all companies with optional filters."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Company",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/companies/TCS",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "companies",
+            "TCS"
+          ]
+        },
+        "description": "Return full company profile with latest KPIs."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Balance Sheet",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/companies/TCS/bs",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "companies",
+            "TCS",
+            "bs"
+          ],
+          "query": [
+            {
+              "key": "from_year",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            },
+            {
+              "key": "to_year",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            }
+          ]
+        },
+        "description": "Return company balance-sheet history."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Cashflow",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/companies/TCS/cashflow",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "companies",
+            "TCS",
+            "cashflow"
+          ],
+          "query": [
+            {
+              "key": "from_year",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            },
+            {
+              "key": "to_year",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            }
+          ]
+        },
+        "description": "Return company cash-flow history."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Company Documents",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/companies/TCS/documents",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "companies",
+            "TCS",
+            "documents"
+          ]
+        },
+        "description": "Return annual-report links for a company."
+      },
+      "response": []
+    },
+    {
+      "name": "Compare Company To Peers",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/companies/TCS/peers/compare",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "companies",
+            "TCS",
+            "peers",
+            "compare"
+          ]
+        },
+        "description": "Return eight-axis company, peer-average and benchmark comparison."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Profit And Loss",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/companies/TCS/pl",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "companies",
+            "TCS",
+            "pl"
+          ],
+          "query": [
+            {
+              "key": "from_year",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            },
+            {
+              "key": "to_year",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            }
+          ]
+        },
+        "description": "Return company profit-and-loss history."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Ratios",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/companies/TCS/ratios",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "companies",
+            "TCS",
+            "ratios"
+          ],
+          "query": [
+            {
+              "key": "year",
+              "value": "",
+              "disabled": true,
+              "description": ""
+            }
+          ]
+        },
+        "description": "Return company financial-ratio history or one selected year."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Tearsheet",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/companies/TCS/tearsheet",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "companies",
+            "TCS",
+            "tearsheet"
+          ]
+        },
+        "description": "Return the company's generated tearsheet PDF."
+      },
+      "response": []
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "health"
+          ]
+        },
+        "description": "Return API health, uptime, version, and database row counts."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Market Cap History",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/market-cap/TCS",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "market-cap",
+            "TCS"
+          ]
+        },
+        "description": "Return 2019-2024 historical market-cap and valuation multiples."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Peer Group",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/peers/IT%20Services",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "peers",
+            "IT%20Services"
+          ]
+        },
+        "description": "Return all companies and ten percentile metrics for a peer group."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Portfolio Stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/portfolio/stats",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "portfolio",
+            "stats"
+          ]
+        },
+        "description": "Return P10-P90 statistics for the ten core portfolio KPIs."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Screener",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/screener",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "screener"
+          ],
+          "query": [
+            {
+              "key": "min_roe",
+              "value": "",
+              "disabled": true,
+              "description": "Minimum return on equity percentage"
+            },
+            {
+              "key": "max_de",
+              "value": "",
+              "disabled": true,
+              "description": "Maximum debt-to-equity ratio"
+            },
+            {
+              "key": "min_fcf",
+              "value": "",
+              "disabled": true,
+              "description": "Minimum free cash flow in crore"
+            },
+            {
+              "key": "sector",
+              "value": "",
+              "disabled": true,
+              "description": "Broad sector filter"
+            },
+            {
+              "key": "min_rev_cagr_5yr",
+              "value": "",
+              "disabled": true,
+              "description": "Minimum 5-year revenue CAGR percentage"
+            },
+            {
+              "key": "min_pat_cagr_5yr",
+              "value": "",
+              "disabled": true,
+              "description": "Minimum 5-year PAT CAGR percentage"
+            },
+            {
+              "key": "max_pe",
+              "value": "",
+              "disabled": true,
+              "description": "Maximum P/E ratio"
+            }
+          ]
+        },
+        "description": "Return ranked companies matching screener filters."
+      },
+      "response": []
+    },
+    {
+      "name": "List Sectors",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/sectors",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "sectors"
+          ]
+        },
+        "description": "Return sector-level company counts and median financial metrics."
+      },
+      "response": []
+    },
+    {
+      "name": "Sector Companies",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/sectors/Information%20Technology/companies",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "sectors",
+            "Information%20Technology",
+            "companies"
+          ]
+        },
+        "description": "Return all companies belonging to one broad sector."
+      },
+      "response": []
+    }
+  ]
+}
